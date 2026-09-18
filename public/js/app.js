@@ -334,6 +334,10 @@
         .map(([hash, label]) => `<a href="${hash}" class="${activeHash === hash ? 'active' : ''}">${label}</a>`)
         .join('');
     }
+    // On a phone the admin links collapse behind this button, so it names the
+    // admin page you're on — otherwise the collapsed menu hides where you are.
+    const activeAdmin = adminLinks.find(([hash]) => hash === activeHash);
+    const adminMenuLabel = activeAdmin ? activeAdmin[1] : t('section_admin');
     app.innerHTML = `
       <div class="layout">
         <div class="sidebar">
@@ -342,7 +346,10 @@
           <nav>${navHtml(employeeLinks)}</nav>
           ${isAdmin ? `
             <div class="section-label">${t('section_admin')}</div>
-            <nav>${navHtml(adminLinks)}</nav>
+            <button class="admin-toggle" id="adminMenuBtn" aria-expanded="false" aria-controls="adminNav">
+              <span class="hamburger" aria-hidden="true"></span>${esc(adminMenuLabel)}
+            </button>
+            <nav id="adminNav" class="admin-nav">${navHtml(adminLinks)}</nav>
           ` : ''}
           <div class="footer">
             <div class="user-name">${esc(u.name)}</div>
@@ -362,6 +369,15 @@
       state.user = null;
       renderLogin();
     };
+    const adminMenuBtn = document.getElementById('adminMenuBtn');
+    if (adminMenuBtn) {
+      adminMenuBtn.onclick = () => {
+        // Picking a link re-renders the shell, which closes the menu on its own.
+        const open = document.getElementById('adminNav').classList.toggle('open');
+        adminMenuBtn.setAttribute('aria-expanded', String(open));
+        adminMenuBtn.classList.toggle('open', open);
+      };
+    }
   }
 
   // ---------- Login ----------
