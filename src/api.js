@@ -602,6 +602,27 @@ function buildReport(query, settings) {
     bucket.entries.push(e);
     bucket.days.add(e.date);
   }
+  // Per-employee hours for each task type that counts toward worked hours, so the
+  // summary shows what the worked total is made of. These columns add up to each
+  // employee's total, since a task type that doesn't count as worked contributes
+  // to neither. An entry with no task type counts as worked (see `enriched`
+  // above), so it gets its own column rather than going missing from the split.
+  const hoursByUserTask = new Map(); // "userId:taskTypeId" -> hours
+  const taskIdsWithHours = new Set();
+  for (const e of enriched) {
+    if (!e.countsAsWorked) continue;
+    const taskId = e.taskTypeId ?? 'none';
+    taskIdsWithHours.add(taskId);
+    const key = `${e.userId}:${taskId}`;
+    hoursByUserTask.set(key, (hoursByUserTask.get(key) || 0) + e.hours);
+  }
+  // Current worked task types, plus any retired one that still has hours here.
+  const workedTaskColumns = [...ttMap.values()]
+    .filter((tt) => tt.countsAsWorked && (tt.active || taskIdsWithHours.has(tt.id)))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+    .map((tt) => ({ taskTypeId: tt.id, name: tt.name }));
+  if (taskIdsWithHours.has('none')) workedTaskColumns.push({ taskTypeId: 'none', name: '—' });
+
   // Overtime is per person per week: the weekly threshold applies to one
   // employee's hours, so the headline totals are the sum of each employee's own
   // split. Pooling everyone into one weekly bucket first would turn three people
@@ -616,6 +637,9 @@ function buildReport(query, settings) {
       userId: b.userId,
       name: b.name,
       daysWorked: b.days.size,
+      taskHours: Object.fromEntries(
+        workedTaskColumns.map((c) => [c.taskTypeId, round1(hoursByUserTask.get(`${b.userId}:${c.taskTypeId}`) || 0)])
+      ),
       regularHours: round1(split.regular),
       overtimeHours: round1(split.overtime),
       totalHours: round1(split.regular + split.overtime),
@@ -659,6 +683,7 @@ function buildReport(query, settings) {
       entries: entries.length,
     },
     weeklyDistribution: [...byWeek.values()].sort((a, b) => a.week.localeCompare(b.week)),
+    workedTaskColumns,
     employeeSummary,
     taskBreakdown,
   };

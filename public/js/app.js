@@ -1147,8 +1147,8 @@
         </div>
         <div class="card">
           <h3 style="margin-top:0">${t('employeeSummary')}</h3>
-          ${r.employeeSummary.length ? `<table><thead><tr><th>${t('employee')}</th><th>${t('daysWorked')}</th><th>${t('regularHours')}</th><th>${t('overtime')}</th><th>${t('totalHoursCol')}</th></tr></thead>
-            <tbody>${r.employeeSummary.map((e) => `<tr><td>${esc(e.name)}</td><td>${e.daysWorked}</td><td>${e.regularHours}h</td><td>${e.overtimeHours}h</td><td>${e.totalHours}h</td></tr>`).join('')}</tbody></table>`
+          ${r.employeeSummary.length ? `<table><thead><tr><th>${t('employee')}</th><th>${t('daysWorked')}</th>${(r.workedTaskColumns || []).map((c) => `<th>${esc(c.name)}</th>`).join('')}<th>${t('regularHours')}</th><th>${t('overtime')}</th><th>${t('totalHoursCol')}</th></tr></thead>
+            <tbody>${r.employeeSummary.map((e) => `<tr><td>${esc(e.name)}</td><td>${e.daysWorked}</td>${(r.workedTaskColumns || []).map((c) => `<td>${(e.taskHours || {})[c.taskTypeId] || 0}h</td>`).join('')}<td>${e.regularHours}h</td><td>${e.overtimeHours}h</td><td>${e.totalHours}h</td></tr>`).join('')}</tbody></table>`
             : `<div class="empty-state">${t(mode === 'year' ? 'noApprovedEntriesYear' : 'noApprovedEntries')}</div>`}
         </div>
       `;

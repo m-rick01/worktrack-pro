@@ -39,6 +39,7 @@ const LABELS = {
     regularCol: 'Regular',
     totalCol: 'Total',
     noData: 'No approved entries in this period.',
+    tooManyTasks: 'Too many task types to break down here — see the Reports screen or the CSV export.',
     page: 'Page {n} of {total}',
     approvedOnly: 'Approved entries only',
   },
@@ -64,6 +65,7 @@ const LABELS = {
     regularCol: 'Régulières',
     totalCol: 'Total',
     noData: 'Aucune entrée approuvée pour cette période.',
+    tooManyTasks: "Trop de types de tâches pour le détail ici — voir l'écran Rapports ou l'export CSV.",
     page: 'Page {n} sur {total}',
     approvedOnly: 'Entrées approuvées seulement',
   },
@@ -103,22 +105,53 @@ function renderReportPdf({ report, companyName, lang = 'en', rangeLabel, employe
   });
   doc.y += 22;
 
+  // One column per task type that counts toward worked hours. The page is a fixed
+  // 516pt wide, so the name column gives up space first, then the task columns
+  // shrink and the type size drops; past that they can't be printed legibly.
+  const taskCols = report.workedTaskColumns || [];
+  const fixedWidth = 44 + 68 + 68 + 68; // days, regular, overtime, total
+  const nameMin = 92;
+  let nameWidth = width - fixedWidth;
+  let taskWidth = 0;
+  let showTaskCols = taskCols.length > 0;
+  if (showTaskCols) {
+    taskWidth = 64;
+    nameWidth = width - fixedWidth - taskWidth * taskCols.length;
+    if (nameWidth < nameMin) {
+      nameWidth = nameMin;
+      taskWidth = (width - fixedWidth - nameMin) / taskCols.length;
+    }
+    if (taskWidth < 30) showTaskCols = false;
+  }
+  if (!showTaskCols) nameWidth = width - fixedWidth;
+
   drawTable(doc, L, {
     title: L.employeeSummary,
+    size: showTaskCols && taskCols.length > 3 ? 8 : 9.5,
+    note: taskCols.length && !showTaskCols ? L.tooManyTasks : '',
     columns: [
-      { key: 'name', label: L.employee, width: 176 },
-      { key: 'days', label: L.daysWorked, width: 70, align: 'right' },
-      { key: 'regular', label: L.regularCol, width: 90, align: 'right' },
-      { key: 'ot', label: L.overtime, width: 90, align: 'right' },
-      { key: 'total', label: L.totalCol, width: 90, align: 'right' },
+      { key: 'name', label: L.employee, width: nameWidth },
+      { key: 'days', label: L.daysWorked, width: 44, align: 'right' },
+      ...(showTaskCols
+        ? taskCols.map((c) => ({ key: `task_${c.taskTypeId}`, label: c.name, width: taskWidth, align: 'right' }))
+        : []),
+      { key: 'regular', label: L.regularCol, width: 68, align: 'right' },
+      { key: 'ot', label: L.overtime, width: 68, align: 'right' },
+      { key: 'total', label: L.totalCol, width: 68, align: 'right' },
     ],
-    rows: report.employeeSummary.map((e) => ({
-      name: e.name,
-      days: String(e.daysWorked),
-      regular: `${e.regularHours}h`,
-      ot: `${e.overtimeHours}h`,
-      total: `${e.totalHours}h`,
-    })),
+    rows: report.employeeSummary.map((e) => {
+      const row = {
+        name: e.name,
+        days: String(e.daysWorked),
+        regular: `${e.regularHours}h`,
+        ot: `${e.overtimeHours}h`,
+        total: `${e.totalHours}h`,
+      };
+      if (showTaskCols) {
+        for (const c of taskCols) row[`task_${c.taskTypeId}`] = `${(e.taskHours || {})[c.taskTypeId] || 0}h`;
+      }
+      return row;
+    }),
   });
 
   drawFooters(doc, L, companyName);
@@ -251,16 +284,21 @@ function drawWeeklyChart(doc, L, weeks, left, width) {
   doc.y += 16;
 }
 
-function drawTable(doc, L, { title, columns, rows }) {
+function drawTable(doc, L, { title, columns, rows, size = 9.5, note = '' }) {
   const left = doc.margin;
   const width = doc.contentWidth;
-  const rowHeight = 20;
+  const rowHeight = size <= 8 ? 17 : 20;
 
   const header = () => {
     sectionTitle(doc, title, left, width);
+    if (note) {
+      doc.text(note, left, doc.y, { size: 8, color: COLOR.muted });
+      doc.y += 13;
+    }
     let x = left;
     for (const col of columns) {
-      doc.text(col.label, x, doc.y, {
+      // Task-type names are user-supplied and can be long; keep them inside the column.
+      doc.text(ellipsize(col.label, col.width - 4, 8, true), x, doc.y, {
         size: 8,
         bold: true,
         color: COLOR.muted,
@@ -290,8 +328,8 @@ function drawTable(doc, L, { title, columns, rows }) {
     }
     let x = left;
     for (const col of columns) {
-      const value = ellipsize(row[col.key], col.width - 8, 9.5);
-      doc.text(value, x, doc.y, { size: 9.5, color: COLOR.text, align: col.align || 'left', width: col.width });
+      const value = ellipsize(row[col.key], col.width - 6, size);
+      doc.text(value, x, doc.y, { size, color: COLOR.text, align: col.align || 'left', width: col.width });
       x += col.width;
     }
     doc.y += rowHeight - 6;
