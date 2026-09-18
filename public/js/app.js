@@ -88,7 +88,7 @@
       role: 'Role', roleEmployee: 'Employee', roleAdmin: 'Admin',
       jobTitle: 'Job Title', department: 'Department', sendInvite: 'Send Invite',
       country: 'Country', employment: 'Employment',
-      editMember_title: 'Edit Member', active: 'Active', save: 'Save',
+      active: 'Active', save: 'Save',
 
       tasks_title: 'Tasks', tasks_sub: 'Manage available tasks for timesheets',
       addTask: '+ Add Task', countsTowardWorked: 'Counts toward worked hours',
@@ -192,7 +192,7 @@
       role: 'Rôle', roleEmployee: 'Employé', roleAdmin: 'Admin',
       jobTitle: 'Titre du poste', department: 'Département', sendInvite: "Envoyer l'invitation",
       country: 'Pays', employment: 'Emploi',
-      editMember_title: 'Modifier le membre', active: 'Actif', save: 'Enregistrer',
+      active: 'Actif', save: 'Enregistrer',
 
       tasks_title: 'Tâches', tasks_sub: 'Gérez les tâches disponibles pour les feuilles de temps',
       addTask: '+ Ajouter une tâche', countsTowardWorked: 'Compte dans les heures travaillées',
@@ -1247,22 +1247,22 @@
       </div>
       <div class="card">
         ${users.map((u) => `
-          <div class="row" style="align-items:center; padding:10px 0; border-bottom:1px solid var(--border)">
-            <div style="flex:2">
+          <button class="member-row" data-member="${u.id}">
+            <span class="member-main">
               <strong>${esc(u.name)}</strong> <span class="badge badge-${u.role}">${u.role === 'admin' ? t('roleAdmin') : t('roleEmployee')}</span>
               ${!u.active ? `<span class="badge badge-rejected">${t('inactive')}</span>` : ''}
-              <div class="hint">${esc(u.email)}${u.jobTitle ? ' · ' + esc(u.jobTitle) : ''}</div>
-            </div>
-            <div>
-              <button class="btn btn-secondary btn-sm" data-edit="${u.id}">${t('edit')}</button>
-            </div>
-          </div>
+              <span class="hint">${esc(u.email)}${u.jobTitle ? ' · ' + esc(u.jobTitle) : ''}</span>
+            </span>
+            <span class="member-chevron" aria-hidden="true">›</span>
+          </button>
         `).join('')}
       </div>
     `);
     document.getElementById('inviteBtn').onclick = () => openInviteModal();
-    document.querySelectorAll('[data-edit]').forEach((btn) => {
-      btn.onclick = () => openEditMemberModal(users.find((u) => u.id === Number(btn.getAttribute('data-edit'))));
+    // The whole row opens the member: a button rather than a clickable div, so it
+    // is reachable by tab and responds to Enter and Space without extra handling.
+    document.querySelectorAll('[data-member]').forEach((row) => {
+      row.onclick = () => openEditMemberModal(users.find((u) => u.id === Number(row.getAttribute('data-member'))));
     });
   }
 
@@ -1314,7 +1314,8 @@
     modalRoot.className = 'modal-backdrop';
     modalRoot.innerHTML = `
       <div class="modal">
-        <h3>${t('editMember_title')}</h3>
+        <h3>${esc(u.name)}</h3>
+        <div class="sub">${esc(u.email)}</div>
         <form id="editForm">
           <div class="form-section">${t('personalInfo')}</div>
           <div class="field"><label>${t('fullName')}</label><input type="text" id="emName" value="${esc(u.name || '')}" required /></div>
