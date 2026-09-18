@@ -46,6 +46,25 @@ function b64(s) {
 }
 
 async function sendMail({ to, subject, text, html }) {
+  // Dry run for local testing: print the message instead of sending it, so
+  // approvals, invites and password resets can be exercised end to end without
+  // mailing real people. The body is printed too, which is how you pick up a
+  // reset link without an inbox. Never enable this in production — nobody would
+  // receive anything, and reset links would sit in the server log.
+  if (process.env.MAIL_DRY_RUN === 'true') {
+    console.log('\n[mail:dry-run] not sent');
+    console.log('  to:      ', to);
+    console.log('  subject: ', subject);
+    const body = (text || html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (body) console.log('  body:    ', body);
+    // Printed separately: stripping the tags above also strips every href, and the
+    // link is the whole point of an invite or a password-reset email.
+    const links = [...String(html || '').matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    for (const link of links) console.log('  link:    ', link);
+    console.log('');
+    return { dryRun: true };
+  }
+
   const host = process.env.SMTP_HOST;
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const user = process.env.SMTP_USER;

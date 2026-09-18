@@ -23,6 +23,9 @@ PlanetHoster) as simple as possible.
 cp .env.example .env
 # edit .env: leave BASE_PATH empty for local dev, fill in SMTP_* if you want
 # real emails to send (otherwise they're just logged to the console)
+# set MAIL_DRY_RUN=true to test approvals, invites and password resets without
+# mailing anyone — every message is printed to the console instead, including
+# the invite and reset links, so you can follow them without an inbox
 
 node src/seed.js     # creates the first admin account + default task types
 node src/server.js   # starts the app on http://localhost:3000
@@ -52,6 +55,9 @@ new password on first login.
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — use a
      mailbox on your domain (cPanel → Email Accounts) so account-invite and
      approval/rejection emails actually send.
+   - `MAIL_DRY_RUN` — leave this **false or unset in production**. Set to `true`
+     it stops all outgoing mail, so nobody would receive an invite or a password
+     reset, and reset links would be written to the server log instead.
    - `DB_PATH` — optional, defaults to `./data/worktrack.db` inside the app
      folder; make sure that folder is writable (it is, by default, once the
      Node app is created).
