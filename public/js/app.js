@@ -306,14 +306,18 @@
     if (state.user && !state.user.mustChangePassword) route();
   });
 
-  // Admin-only views for the timesheet routes: an admin who lands on My Time or
-  // History — by bookmark, or via the default landing route, which used to be My
-  // Time for everyone — goes to the approvals queue instead.
+  // Each role is sent to its own home when it follows a link belonging to the
+  // other: an admin at My Time goes to Approvals, an employee at Reports goes to
+  // My Time. This is presentation only — it keeps a bookmark or a stale link from
+  // rendering a screen full of failed requests. The actual enforcement is
+  // requireAdmin on the server, which answers 403 whatever the client does.
   const EMPLOYEE_ONLY = ['', '#/my-time', '#/history'];
+  const ADMIN_ONLY = ['#/approvals', '#/reports', '#/team', '#/tasks', '#/settings'];
 
   function route() {
     const isAdmin = state.user && state.user.role === 'admin';
     if (isAdmin && EMPLOYEE_ONLY.includes(location.hash)) return navigate('#/approvals');
+    if (!isAdmin && ADMIN_ONLY.includes(location.hash)) return navigate('#/my-time');
     const view = routes[location.hash] || (isAdmin ? viewApprovals : viewMyTime);
     view();
   }
