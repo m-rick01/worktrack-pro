@@ -93,7 +93,7 @@
       addTask: '+ Add Task', countsTowardWorked: 'Counts toward worked hours',
       doesNotCount: 'Does not count toward worked hours', deactivate: 'Deactivate', activate: 'Activate',
       delete: 'Delete', noTaskTypes: 'No task types yet.', confirmDeleteTask: 'Delete this task type?',
-      addTaskModal_title: 'Add Task', name: 'Name',
+      addTaskModal_title: 'Add Task', editTaskModal_title: 'Edit Task', name: 'Name',
 
       settings_title: 'Settings', settings_sub: 'Configure pay cycle and app settings',
       payCycle: 'Pay Cycle', payCycleLength: 'Pay Cycle Length (days)',
@@ -196,7 +196,7 @@
       addTask: '+ Ajouter une tâche', countsTowardWorked: 'Compte dans les heures travaillées',
       doesNotCount: 'Ne compte pas dans les heures travaillées', deactivate: 'Désactiver', activate: 'Activer',
       delete: 'Supprimer', noTaskTypes: 'Aucun type de tâche pour l’instant.', confirmDeleteTask: 'Supprimer ce type de tâche ?',
-      addTaskModal_title: 'Ajouter une tâche', name: 'Nom',
+      addTaskModal_title: 'Ajouter une tâche', editTaskModal_title: 'Modifier la tâche', name: 'Nom',
 
       settings_title: 'Paramètres', settings_sub: 'Configurez le cycle de paie et les paramètres de l’application',
       payCycle: 'Cycle de paie', payCycleLength: 'Durée du cycle de paie (jours)',
@@ -1330,6 +1330,7 @@
               <div class="hint">${tk.countsAsWorked ? t('countsTowardWorked') : t('doesNotCount')}</div>
             </div>
             <div>
+              <button class="btn btn-secondary btn-sm" data-edit="${tk.id}">${t('edit')}</button>
               <button class="btn btn-secondary btn-sm" data-toggle="${tk.id}" data-active="${tk.active}">${tk.active ? t('deactivate') : t('activate')}</button>
               <button class="btn btn-danger btn-sm" data-del="${tk.id}">${t('delete')}</button>
             </div>
@@ -1338,6 +1339,9 @@
       </div>
     `);
     document.getElementById('addTaskBtn').onclick = () => openTaskModal();
+    document.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.onclick = () => openTaskModal(taskTypes.find((tk) => tk.id === Number(btn.getAttribute('data-edit'))));
+    });
     document.querySelectorAll('[data-toggle]').forEach((btn) => {
       btn.onclick = async () => {
         const active = btn.getAttribute('data-active') === '1' || btn.getAttribute('data-active') === 'true';
@@ -1354,15 +1358,16 @@
     });
   }
 
-  function openTaskModal() {
+  // Adds a task type, or edits `task` when one is passed in.
+  function openTaskModal(task) {
     const modalRoot = document.createElement('div');
     modalRoot.className = 'modal-backdrop';
     modalRoot.innerHTML = `
       <div class="modal">
-        <h3>${t('addTaskModal_title')}</h3>
+        <h3>${task ? t('editTaskModal_title') : t('addTaskModal_title')}</h3>
         <form id="taskForm">
-          <div class="field"><label>${t('name')}</label><input type="text" id="tName" required /></div>
-          <div class="checkbox-row"><input type="checkbox" id="tCounts" checked/> <label style="margin:0">${t('countsTowardWorked')}</label></div>
+          <div class="field"><label>${t('name')}</label><input type="text" id="tName" required value="${task ? esc(task.name) : ''}" /></div>
+          <div class="checkbox-row"><input type="checkbox" id="tCounts" ${!task || task.countsAsWorked ? 'checked' : ''}/> <label style="margin:0">${t('countsTowardWorked')}</label></div>
           <div class="error-text" id="tError"></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" id="tCancel">${t('cancel')}</button>
@@ -1375,11 +1380,13 @@
     document.getElementById('tCancel').onclick = () => modalRoot.remove();
     document.getElementById('taskForm').onsubmit = async (e) => {
       e.preventDefault();
+      const body = {
+        name: document.getElementById('tName').value,
+        countsAsWorked: document.getElementById('tCounts').checked,
+      };
       try {
-        await api('/api/tasktypes', { method: 'POST', body: {
-          name: document.getElementById('tName').value,
-          countsAsWorked: document.getElementById('tCounts').checked,
-        } });
+        if (task) await api(`/api/tasktypes/${task.id}`, { method: 'PATCH', body });
+        else await api('/api/tasktypes', { method: 'POST', body });
         modalRoot.remove();
         viewTasks();
       } catch (err) {
