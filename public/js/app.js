@@ -306,8 +306,15 @@
     if (state.user && !state.user.mustChangePassword) route();
   });
 
+  // Admin-only views for the timesheet routes: an admin who lands on My Time or
+  // History — by bookmark, or via the default landing route, which used to be My
+  // Time for everyone — goes to the approvals queue instead.
+  const EMPLOYEE_ONLY = ['', '#/my-time', '#/history'];
+
   function route() {
-    const view = routes[location.hash] || viewMyTime;
+    const isAdmin = state.user && state.user.role === 'admin';
+    if (isAdmin && EMPLOYEE_ONLY.includes(location.hash)) return navigate('#/approvals');
+    const view = routes[location.hash] || (isAdmin ? viewApprovals : viewMyTime);
     view();
   }
 
@@ -317,11 +324,15 @@
   function layout(activeHash, title, sub, contentHtml) {
     const u = state.user;
     const isAdmin = u.role === 'admin';
-    const employeeLinks = [
-      ['#/my-time', t('nav_myTime')],
-      ['#/history', t('nav_history')],
-      ['#/profile', t('nav_profile')],
-    ];
+    // Admins don't log their own hours, so the timesheet views aren't theirs.
+    // Profile stays — they still need it for contact details and their password.
+    const employeeLinks = isAdmin
+      ? [['#/profile', t('nav_profile')]]
+      : [
+          ['#/my-time', t('nav_myTime')],
+          ['#/history', t('nav_history')],
+          ['#/profile', t('nav_profile')],
+        ];
     const adminLinks = [
       ['#/approvals', t('nav_approvals')],
       ['#/reports', t('nav_reports')],
@@ -342,7 +353,7 @@
       <div class="layout">
         <div class="sidebar">
           <div class="brand"><img src="${BASE}/img/logo.png" alt="Orthoclic" /></div>
-          <div class="section-label">${t('section_employee')}</div>
+          ${isAdmin ? '' : `<div class="section-label">${t('section_employee')}</div>`}
           <nav>${navHtml(employeeLinks)}</nav>
           ${isAdmin ? `
             <div class="section-label">${t('section_admin')}</div>

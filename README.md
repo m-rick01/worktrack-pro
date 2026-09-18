@@ -126,6 +126,9 @@ data/           SQLite database file (created automatically)
 - Entries move Draft → Pending → Approved/Rejected. Once reviewed, an entry is
   locked for the employee; only an admin can still edit it. Approvals/
   rejections email the employee.
+- Admins don't log their own hours: they get Profile plus the admin screens, and
+  sign in to the Approvals queue rather than a timesheet. My Time and History are
+  employee-only, and an admin who follows one of those links lands on Approvals.
 - Admin: Approvals queue, Reports (regular vs. overtime hours — overtime is
   anything past the configurable weekly threshold, default 40h, counted per
   employee — weekly chart, per-employee summary, CSV and PDF export), Team
