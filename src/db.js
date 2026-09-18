@@ -1,0 +1,104 @@
+// SQLite database layer using Node's built-in node:sqlite (no external deps).
+const path = require('node:path');
+const fs = require('node:fs');
+const { DatabaseSync } = require('node:sqlite');
+
+const DATA_DIR = path.join(__dirname, '..', 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'worktrack.db');
+const db = new DatabaseSync(DB_PATH);
+
+db.exec('PRAGMA foreign_keys = ON;');
+db.exec('PRAGMA journal_mode = WAL;');
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  passwordHash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK(role IN ('admin','employee')),
+  phone TEXT DEFAULT '',
+  street TEXT DEFAULT '',
+  city TEXT DEFAULT '',
+  postalCode TEXT DEFAULT '',
+  country TEXT DEFAULT '',
+  dateOfBirth TEXT DEFAULT '',
+  jobTitle TEXT DEFAULT '',
+  department TEXT DEFAULT '',
+  language TEXT DEFAULT 'English',
+  active INTEGER NOT NULL DEFAULT 1,
+  mustChangePassword INTEGER NOT NULL DEFAULT 1,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+  expiresAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS task_types (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  countsAsWorked INTEGER NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1,
+  sortOrder INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date TEXT NOT NULL,
+  hours REAL NOT NULL,
+  taskTypeId INTEGER REFERENCES task_types(id),
+  notes TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','pending','approved','rejected')),
+  reviewedBy INTEGER REFERENCES users(id),
+  reviewedAt TEXT,
+  rejectionReason TEXT DEFAULT '',
+  createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+  updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(userId, date)
+);
+
+CREATE TABLE IF NOT EXISTS attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timeEntryId INTEGER NOT NULL REFERENCES time_entries(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  storedName TEXT NOT NULL,
+  mimeType TEXT DEFAULT '',
+  size INTEGER DEFAULT 0,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  payCycleLengthDays INTEGER NOT NULL DEFAULT 14,
+  payCycleReferenceDate TEXT NOT NULL DEFAULT '2026-01-05',
+  overtimeWeeklyThreshold REAL NOT NULL DEFAULT 40,
+  notifyNewAccount INTEGER NOT NULL DEFAULT 1,
+  notifyApproval INTEGER NOT NULL DEFAULT 1,
+  notifyRejection INTEGER NOT NULL DEFAULT 1,
+  companyName TEXT NOT NULL DEFAULT 'Orthoclic'
+);
+`);
+
+// Migration: add dateOfBirth to users created before this column existed.
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+if (!userColumns.includes('dateOfBirth')) {
+  db.exec("ALTER TABLE users ADD COLUMN dateOfBirth TEXT DEFAULT ''");
+}
+
+// Ensure singleton settings row exists.
+const settingsRow = db.prepare('SELECT id FROM settings WHERE id = 1').get();
+if (!settingsRow) {
+  db.prepare(
+    `INSERT INTO settings (id, payCycleLengthDays, payCycleReferenceDate, overtimeWeeklyThreshold)
+     VALUES (1, 14, '2026-01-05', 40)`
+  ).run();
+}
+
+module.exports = db;

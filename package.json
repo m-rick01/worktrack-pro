@@ -1,0 +1,14 @@
+{
+  "name": "worktrack-pro",
+  "version": "1.0.0",
+  "description": "WorkTrack Pro - timesheet & employee management app (zero external dependencies)",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
