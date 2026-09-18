@@ -14,6 +14,19 @@
       section_employee: 'Employee', section_admin: 'Admin', signOut: 'Sign Out',
 
       login_email: 'Email', login_password: 'Password', login_signIn: 'Sign In',
+      login_forgot: 'Forgot your password?',
+      forgot_title: 'Reset your password',
+      forgot_sub: 'Enter your email address and we will send you a link to choose a new password.',
+      forgot_send: 'Send reset link',
+      forgot_sent: 'If that address has an account, a reset link is on its way. It expires in 60 minutes.',
+      forgot_back: 'Back to sign in',
+      reset_title: 'Choose a new password',
+      reset_sub: 'Set a new password for your account.',
+      reset_label: 'New password (min 8 characters)',
+      reset_confirm: 'Confirm new password',
+      reset_mismatch: 'The two passwords do not match.',
+      reset_submit: 'Save new password',
+      reset_done: 'Your password has been updated. You can sign in now.',
 
       forcePw_title: 'Set a new password',
       forcePw_sub: 'This is your first login — please choose a new password.',
@@ -103,6 +116,19 @@
       section_employee: 'Employé', section_admin: 'Admin', signOut: 'Déconnexion',
 
       login_email: 'Courriel', login_password: 'Mot de passe', login_signIn: 'Se connecter',
+      login_forgot: 'Mot de passe oublié ?',
+      forgot_title: 'Réinitialiser votre mot de passe',
+      forgot_sub: 'Entrez votre courriel et nous vous enverrons un lien pour choisir un nouveau mot de passe.',
+      forgot_send: 'Envoyer le lien',
+      forgot_sent: "Si un compte existe pour cette adresse, un lien vient d'être envoyé. Il expire dans 60 minutes.",
+      forgot_back: 'Retour à la connexion',
+      reset_title: 'Choisir un nouveau mot de passe',
+      reset_sub: 'Définissez un nouveau mot de passe pour votre compte.',
+      reset_label: 'Nouveau mot de passe (min. 8 caractères)',
+      reset_confirm: 'Confirmer le nouveau mot de passe',
+      reset_mismatch: 'Les deux mots de passe ne correspondent pas.',
+      reset_submit: 'Enregistrer le mot de passe',
+      reset_done: 'Votre mot de passe a été mis à jour. Vous pouvez maintenant vous connecter.',
 
       forcePw_title: 'Définir un nouveau mot de passe',
       forcePw_sub: 'Ceci est votre première connexion — veuillez choisir un nouveau mot de passe.',
@@ -240,7 +266,20 @@
     '#/settings': viewSettings,
   };
 
+  // "#/reset?token=..." — the token rides in the fragment, which browsers never
+  // send to the server, so it stays out of access logs and Referer headers.
+  function hashRoute() {
+    const raw = location.hash.replace(/^#/, '');
+    const q = raw.indexOf('?');
+    if (q === -1) return { path: raw, params: new URLSearchParams() };
+    return { path: raw.slice(0, q), params: new URLSearchParams(raw.slice(q + 1)) };
+  }
+
   async function boot() {
+    const { path, params } = hashRoute();
+    if (path === '/reset' && params.get('token')) {
+      return renderResetPassword(params.get('token'));
+    }
     try {
       const { user } = await api('/api/me');
       state.user = user;
@@ -254,9 +293,18 @@
       state.taskTypes = tt.taskTypes;
       state.settings = st.settings;
     } catch (e) { /* non-fatal */ }
-    window.addEventListener('hashchange', route);
     route();
   }
+
+  // Registered once for the app's lifetime. Inside boot() it would be added again
+  // on every sign-in, and it would leave the emailed reset link dead in a tab that
+  // is already open and signed out, where following the link only changes the
+  // fragment and never reloads the page.
+  window.addEventListener('hashchange', () => {
+    const { path, params } = hashRoute();
+    if (path === '/reset' && params.get('token')) return renderResetPassword(params.get('token'));
+    if (state.user && !state.user.mustChangePassword) route();
+  });
 
   function route() {
     const view = routes[location.hash] || viewMyTime;
@@ -334,9 +382,11 @@
             <button class="btn btn-primary" style="width:100%" type="submit">${t('login_signIn')}</button>
             <div class="error-text" id="loginError"></div>
           </form>
+          <button class="link-btn" id="forgotLink">${t('login_forgot')}</button>
         </div>
       </div>
     `;
+    document.getElementById('forgotLink').onclick = renderForgotPassword;
     document.getElementById('loginForm').onsubmit = async (e) => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
@@ -348,6 +398,82 @@
       } catch (err) {
         document.getElementById('loginError').textContent = err.message;
       }
+    };
+  }
+
+  function renderForgotPassword() {
+    app.innerHTML = `
+      <div class="login-wrap">
+        <div class="login-card">
+          <h1>${t('forgot_title')}</h1>
+          <p class="page-sub" style="margin-bottom:16px">${t('forgot_sub')}</p>
+          <form id="forgotForm">
+            <div class="field">
+              <label>${t('login_email')}</label>
+              <input type="email" id="forgotEmail" required autofocus />
+            </div>
+            <button class="btn btn-primary" style="width:100%" type="submit">${t('forgot_send')}</button>
+            <div class="success-text" id="forgotMsg"></div>
+          </form>
+          <button class="link-btn" id="backToLogin">${t('forgot_back')}</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('backToLogin').onclick = renderLogin;
+    document.getElementById('forgotForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value.trim();
+      try {
+        await api('/api/forgot-password', { method: 'POST', body: { email } });
+      } catch (err) { /* the endpoint answers the same either way; so does the UI */ }
+      // Always the same confirmation, so this screen can't reveal who has an account.
+      document.getElementById('forgotForm').reset();
+      document.getElementById('forgotMsg').textContent = t('forgot_sent');
+    };
+  }
+
+  function renderResetPassword(token) {
+    app.innerHTML = `
+      <div class="login-wrap">
+        <div class="login-card">
+          <h1>${t('reset_title')}</h1>
+          <p class="page-sub" style="margin-bottom:16px">${t('reset_sub')}</p>
+          <form id="resetForm">
+            <div class="field">
+              <label>${t('reset_label')}</label>
+              <input type="password" id="resetPw" minlength="8" required autofocus />
+            </div>
+            <div class="field">
+              <label>${t('reset_confirm')}</label>
+              <input type="password" id="resetPw2" minlength="8" required />
+            </div>
+            <button class="btn btn-primary" style="width:100%" type="submit">${t('reset_submit')}</button>
+            <div class="error-text" id="resetError"></div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.getElementById('resetForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('resetPw').value;
+      const confirm = document.getElementById('resetPw2').value;
+      const error = document.getElementById('resetError');
+      error.textContent = '';
+      if (password !== confirm) {
+        error.textContent = t('reset_mismatch');
+        return;
+      }
+      try {
+        await api('/api/reset-password', { method: 'POST', body: { token, password } });
+      } catch (err) {
+        error.textContent = err.message;
+        return;
+      }
+      // Drop the spent token out of the URL so a refresh doesn't reopen this form.
+      history.replaceState(null, '', location.pathname + location.search);
+      renderLogin();
+      document.getElementById('loginError').className = 'success-text';
+      document.getElementById('loginError').textContent = t('reset_done');
     };
   }
 

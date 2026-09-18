@@ -108,6 +108,12 @@ data/           SQLite database file (created automatically)
 
 - Email/password login; only admins can create accounts (Team → Invite Member),
   new accounts get emailed their temporary credentials + a login link.
+- Self-serve password reset: "Forgot your password?" on the login screen emails a
+  single-use link (in the employee's own language) that expires after 60 minutes.
+  Only a SHA-256 of each token is stored, using it signs the account out of every
+  other session, and the screen gives the same answer for every address so it
+  can't be used to discover who has an account. Requires `APP_URL` to be set
+  correctly — that's what the emailed link is built from.
 - Employee: My Time (monthly calendar, new-entry modal with hours/task/notes/
   attachment), History (filterable past entries), Profile (self-editable
   contact info + language; job title/department are admin-managed).

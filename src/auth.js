@@ -29,6 +29,40 @@ function generateTempPassword() {
   return out;
 }
 
+// ---------- Password reset tokens ----------
+
+const RESET_MINUTES = 60;
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+// Returns the plain token to email; only its hash is stored.
+function createPasswordReset(userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + RESET_MINUTES * 60 * 1000).toISOString();
+  db.prepare('INSERT INTO password_resets (userId, tokenHash, expiresAt) VALUES (?, ?, ?)').run(
+    userId,
+    hashToken(token),
+    expiresAt
+  );
+  return { token, expiresAt };
+}
+
+// The row for an unused, unexpired token, or null.
+// Expiry is compared in JS on purpose: expiresAt is an ISO string, and comparing
+// it to SQLite's datetime('now') in SQL compares 'T' against ' ', which makes any
+// same-day expiry look like the future.
+function findPasswordReset(token) {
+  if (!token) return null;
+  const row = db
+    .prepare('SELECT * FROM password_resets WHERE tokenHash = ? AND usedAt IS NULL')
+    .get(hashToken(token));
+  if (!row) return null;
+  if (new Date(row.expiresAt).getTime() <= Date.now()) return null;
+  return row;
+}
+
 function createSession(userId) {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -69,6 +103,9 @@ module.exports = {
   hashPassword,
   verifyPassword,
   generateTempPassword,
+  createPasswordReset,
+  findPasswordReset,
+  RESET_MINUTES,
   createSession,
   destroySession,
   getUserBySession,

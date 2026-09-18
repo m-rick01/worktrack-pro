@@ -106,6 +106,91 @@ route('POST', '/api/change-password', async (req, res, ctx, params, body) => {
   sendJson(res, 200, { ok: true });
 });
 
+// ---------- FORGOT / RESET PASSWORD (no session required) ----------
+
+// Throttles reset emails per address, so the endpoint can't be used to flood
+// someone's inbox. In memory on purpose: it resets when the app restarts, which
+// is fine for a rate limit and keeps the database free of request logs.
+const resetRequests = new Map(); // email -> timestamps
+const RESET_MAX_PER_HOUR = 5;
+const RESET_MIN_GAP_MS = 2 * 60 * 1000;
+
+function allowResetRequest(email) {
+  const now = Date.now();
+  const recent = (resetRequests.get(email) || []).filter((t) => now - t < 60 * 60 * 1000);
+  if (recent.length >= RESET_MAX_PER_HOUR) return false;
+  if (recent.length && now - recent[recent.length - 1] < RESET_MIN_GAP_MS) return false;
+  recent.push(now);
+  resetRequests.set(email, recent);
+  return true;
+}
+
+route('POST', '/api/forgot-password', async (req, res, ctx, params, body) => {
+  const email = String(body.email || '').toLowerCase().trim();
+
+  // The answer is always the same, so this can't be used to find out who has an
+  // account here. Every early return below is deliberately indistinguishable.
+  const generic = { ok: true };
+  if (!email) return sendJson(res, 200, generic);
+  if (!allowResetRequest(email)) return sendJson(res, 200, generic);
+
+  const user = db.prepare('SELECT * FROM users WHERE email = ? AND active = 1').get(email);
+  if (!user) return sendJson(res, 200, generic);
+
+  // Any older link stops working as soon as a new one is issued.
+  db.prepare('DELETE FROM password_resets WHERE userId = ? AND usedAt IS NULL').run(user.id);
+  const { token } = auth.createPasswordReset(user.id);
+
+  const settings = getSettings();
+  const appUrl = process.env.APP_URL || '/';
+  const link = `${appUrl}#/reset?token=${token}`;
+  const fr = user.language === 'Français';
+  sendMail({
+    to: user.email,
+    subject: fr
+      ? `Réinitialisation de votre mot de passe ${settings.companyName}`
+      : `Reset your ${settings.companyName} password`,
+    html: fr
+      ? `
+        <p>Bonjour ${user.name},</p>
+        <p>Une réinitialisation de mot de passe a été demandée pour votre compte WorkTrack.</p>
+        <p><a href="${link}">Choisir un nouveau mot de passe</a></p>
+        <p>Ce lien expire dans ${auth.RESET_MINUTES} minutes et ne peut servir qu'une seule fois.</p>
+        <p>Si vous n'avez pas fait cette demande, ignorez ce message : votre mot de passe reste inchangé.</p>
+      `
+      : `
+        <p>Hi ${user.name},</p>
+        <p>A password reset was requested for your WorkTrack account.</p>
+        <p><a href="${link}">Choose a new password</a></p>
+        <p>This link expires in ${auth.RESET_MINUTES} minutes and can only be used once.</p>
+        <p>If you didn't ask for this, you can ignore this email — your password stays as it is.</p>
+      `,
+  }).catch((err) => console.error('[mail] failed to send password-reset email:', err.message));
+
+  sendJson(res, 200, generic);
+});
+
+route('POST', '/api/reset-password', async (req, res, ctx, params, body) => {
+  const token = String(body.token || '');
+  const password = String(body.password || '');
+  if (password.length < 8) return sendError(res, 400, 'New password must be at least 8 characters');
+
+  const reset = auth.findPasswordReset(token);
+  const user = reset ? db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(reset.userId) : null;
+  if (!user) return sendError(res, 400, 'This reset link is invalid or has expired.');
+
+  db.prepare('UPDATE users SET passwordHash = ?, mustChangePassword = 0 WHERE id = ?').run(
+    auth.hashPassword(password),
+    user.id
+  );
+  db.prepare("UPDATE password_resets SET usedAt = datetime('now') WHERE id = ?").run(reset.id);
+  db.prepare('DELETE FROM password_resets WHERE userId = ? AND usedAt IS NULL').run(user.id);
+  // Whoever prompted the reset may have been signed in somewhere; drop it all.
+  db.prepare('DELETE FROM sessions WHERE userId = ?').run(user.id);
+
+  sendJson(res, 200, { ok: true });
+});
+
 // ---------- PROFILE (self-service) ----------
 route('PATCH', '/api/profile', async (req, res, ctx, params, body) => {
   if (!requireAuth(ctx, res)) return;

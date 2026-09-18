@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS sessions (
   expiresAt TEXT NOT NULL
 );
 
+-- Single-use "forgot password" tokens. Only the SHA-256 of the token is kept,
+-- so a copy of this database does not let anyone reset an account.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tokenHash TEXT NOT NULL UNIQUE,
+  expiresAt TEXT NOT NULL,
+  usedAt TEXT,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS task_types (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,

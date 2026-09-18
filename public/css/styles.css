@@ -120,6 +120,11 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
 .login-card h1 { font-size: 20px; margin: 0 0 20px; }
 .login-card .login-logo { display: block; max-width: 240px; height: auto; margin: 0 auto 24px; }
 .error-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
+.success-text { color: var(--success); font-size: 13px; margin-top: 8px; }
+.link-btn {
+  background: none; border: 0; padding: 0; margin-top: 14px;
+  color: var(--accent); font-size: 13px; cursor: pointer; text-decoration: underline;
+}
 .empty-state { color: var(--text-muted); padding: 40px 0; text-align: center; font-size: 14px; }
 
 .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
