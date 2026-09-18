@@ -1288,7 +1288,7 @@
           <div class="field"><label>${t('role')}</label>
             <select id="emRole"><option value="employee" ${u.role === 'employee' ? 'selected' : ''}>${t('roleEmployee')}</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roleAdmin')}</option></select>
           </div>
-          <div class="checkbox-row"><input type="checkbox" id="emActive" ${u.active ? 'checked' : ''}/> <label style="margin:0">${t('active')}</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="emActive" ${u.active ? 'checked' : ''}/> <label for="emActive" style="margin:0">${t('active')}</label></div>
           <div class="error-text" id="emError"></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" id="emCancel">${t('cancel')}</button>
@@ -1367,7 +1367,7 @@
         <h3>${task ? t('editTaskModal_title') : t('addTaskModal_title')}</h3>
         <form id="taskForm">
           <div class="field"><label>${t('name')}</label><input type="text" id="tName" required value="${task ? esc(task.name) : ''}" /></div>
-          <div class="checkbox-row"><input type="checkbox" id="tCounts" ${!task || task.countsAsWorked ? 'checked' : ''}/> <label style="margin:0">${t('countsTowardWorked')}</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="tCounts" ${!task || task.countsAsWorked ? 'checked' : ''}/> <label for="tCounts" style="margin:0">${t('countsTowardWorked')}</label></div>
           <div class="error-text" id="tError"></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" id="tCancel">${t('cancel')}</button>
@@ -1426,9 +1426,9 @@
       </div>
       <div class="card">
         <h3 style="margin-top:0">${t('notifications')}</h3>
-        <div class="checkbox-row"><input type="checkbox" id="stNotifyNew" ${settings.notifyNewAccount ? 'checked' : ''}/><label style="margin:0">${t('notifyNewAccount')}</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="stNotifyApprove" ${settings.notifyApproval ? 'checked' : ''}/><label style="margin:0">${t('notifyApproval')}</label></div>
-        <div class="checkbox-row"><input type="checkbox" id="stNotifyReject" ${settings.notifyRejection ? 'checked' : ''}/><label style="margin:0">${t('notifyRejection')}</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="stNotifyNew" ${settings.notifyNewAccount ? 'checked' : ''}/><label for="stNotifyNew" style="margin:0">${t('notifyNewAccount')}</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="stNotifyApprove" ${settings.notifyApproval ? 'checked' : ''}/><label for="stNotifyApprove" style="margin:0">${t('notifyApproval')}</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="stNotifyReject" ${settings.notifyRejection ? 'checked' : ''}/><label for="stNotifyReject" style="margin:0">${t('notifyRejection')}</label></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">${t('company')}</h3>

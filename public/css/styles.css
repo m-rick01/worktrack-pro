@@ -116,7 +116,8 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
 .modal .close-x { position: absolute; }
 
 .login-wrap { min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-.login-card { width: 360px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
+.login-wrap { padding: 20px; }
+.login-card { width: 360px; max-width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; }
 .login-card h1 { font-size: 20px; margin: 0 0 20px; }
 .login-card .login-logo { display: block; max-width: 240px; height: auto; margin: 0 auto 24px; }
 .error-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
@@ -145,11 +146,71 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
 
 .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .checkbox-row input { width: auto; }
+.checkbox-row label { cursor: pointer; }
+
+/* Pointer is coarse: a finger, not a mouse. A default checkbox renders about
+   13px square, which is too small to hit reliably. */
+@media (pointer: coarse) {
+  .checkbox-row { gap: 12px; margin-bottom: 16px; }
+  .checkbox-row input[type=checkbox] { width: 22px; height: 22px; }
+  .checkbox-row label { padding: 8px 0; }
+}
 
 @media (max-width: 800px) {
   .layout { flex-direction: column; }
-  .sidebar { width: 100%; flex-direction: row; overflow-x: auto; padding: 10px; }
-  .sidebar .brand, .sidebar .section-label, .sidebar .footer { display: none; }
-  .sidebar nav { display: flex; }
-  .main { padding: 20px; }
+
+  /* The nav becomes a bar across the top. It wraps rather than scrolling
+     sideways: with eight admin links on a phone, a hidden horizontal scroll
+     leaves items no one can find. */
+  .sidebar {
+    width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center;
+    gap: 2px; padding: 8px 10px; overflow: visible;
+  }
+  .sidebar .brand, .sidebar .section-label { display: none; }
+  .sidebar nav { display: flex; flex-wrap: wrap; }
+  .sidebar nav a { padding: 10px 12px; border-radius: 6px; white-space: nowrap; }
+
+  /* Sign Out lived in .footer, which used to be hidden here — so on a phone
+     there was no way to sign out at all. Keep the button, drop the name/email. */
+  .sidebar .footer {
+    display: block; margin: 0 0 0 auto; padding: 0; border-top: none; flex-shrink: 0;
+  }
+  .sidebar .user-name, .sidebar .user-email { display: none; }
+  .sidebar .signout { margin: 0; padding: 10px 12px; }
+
+  .main { padding: 20px 16px; }
+  .page-title { font-size: 22px; }
+
+  /* A table that can't shrink any further scrolls inside its own card, instead
+     of dragging the whole page sideways and taking the nav with it. */
+  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Touch targets: these were ~29px, well under what a thumb can hit. */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 38px; padding: 8px 12px; }
+
+  /* Also by width, not only by (pointer: coarse): a small screen is a phone in
+     practice, and this way the size is guaranteed rather than UA-dependent. */
+  .checkbox-row { gap: 12px; margin-bottom: 16px; }
+  .checkbox-row input[type=checkbox] { width: 22px; height: 22px; }
+
+  .stat-tile { padding: 14px; }
+  .stat-tile .value { font-size: 22px; }
+  .modal { padding: 18px; }
+  .modal-actions { gap: 8px; }
+}
+
+/* Phone-sized calendar: seven columns leave ~47px each, so the desktop cell
+   height and type sizes no longer fit. */
+@media (max-width: 560px) {
+  .calendar-cell { min-height: 62px; padding: 4px; }
+  .calendar-cell .date-num { font-size: 12px; }
+  .calendar-cell .entry-pill {
+    font-size: 10px; padding: 2px 4px; margin-top: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .calendar-grid .dow { font-size: 10px; padding: 6px 2px; }
+  .calendar-header { padding: 12px 10px; }
+  .row { gap: 12px; }
+  .col { min-width: 100%; }
 }
