@@ -87,6 +87,7 @@
       inviteModal_title: 'Invite Member', inviteModal_sub: "They'll receive an email with login credentials.",
       role: 'Role', roleEmployee: 'Employee', roleAdmin: 'Admin',
       jobTitle: 'Job Title', department: 'Department', sendInvite: 'Send Invite',
+      country: 'Country', employment: 'Employment',
       editMember_title: 'Edit Member', active: 'Active', save: 'Save',
 
       tasks_title: 'Tasks', tasks_sub: 'Manage available tasks for timesheets',
@@ -190,6 +191,7 @@
       inviteModal_title: 'Inviter un membre', inviteModal_sub: 'Ils recevront un courriel avec leurs identifiants de connexion.',
       role: 'Rôle', roleEmployee: 'Employé', roleAdmin: 'Admin',
       jobTitle: 'Titre du poste', department: 'Département', sendInvite: "Envoyer l'invitation",
+      country: 'Pays', employment: 'Emploi',
       editMember_title: 'Modifier le membre', active: 'Actif', save: 'Enregistrer',
 
       tasks_title: 'Tâches', tasks_sub: 'Gérez les tâches disponibles pour les feuilles de temps',
@@ -1314,12 +1316,37 @@
       <div class="modal">
         <h3>${t('editMember_title')}</h3>
         <form id="editForm">
+          <div class="form-section">${t('personalInfo')}</div>
+          <div class="field"><label>${t('fullName')}</label><input type="text" id="emName" value="${esc(u.name || '')}" required /></div>
+          <div class="field"><label>${t('email')}</label><input type="email" value="${esc(u.email)}" disabled />
+            <div class="hint">${t('emailCannotChange')}</div></div>
+          <div class="field"><label>${t('phoneNumber')}</label><input type="text" id="emPhone" value="${esc(u.phone || '')}" placeholder="+1 (555) 123-4567" /></div>
+          <div class="field"><label>${t('dateOfBirth')}</label><input type="date" id="emDob" value="${esc(u.dateOfBirth || '')}" /></div>
+
+          <div class="form-section">${t('address')}</div>
+          <div class="field"><label>${t('streetAddress')}</label><input type="text" id="emStreet" value="${esc(u.street || '')}" /></div>
+          <div class="row">
+            <div class="col field"><label>${t('city')}</label><input type="text" id="emCity" value="${esc(u.city || '')}" /></div>
+            <div class="col field"><label>${t('postalCode')}</label><input type="text" id="emPostal" value="${esc(u.postalCode || '')}" /></div>
+          </div>
+          <div class="field"><label>${t('country')}</label><input type="text" id="emCountry" value="${esc(u.country || '')}" /></div>
+
+          <div class="form-section">${t('employment')}</div>
           <div class="field"><label>${t('jobTitle')}</label><input type="text" id="emJobTitle" value="${esc(u.jobTitle || '')}" /></div>
           <div class="field"><label>${t('department')}</label><input type="text" id="emDept" value="${esc(u.department || '')}" /></div>
           <div class="field"><label>${t('role')}</label>
             <select id="emRole"><option value="employee" ${u.role === 'employee' ? 'selected' : ''}>${t('roleEmployee')}</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roleAdmin')}</option></select>
           </div>
           <div class="checkbox-row"><input type="checkbox" id="emActive" ${u.active ? 'checked' : ''}/> <label for="emActive" style="margin:0">${t('active')}</label></div>
+
+          <div class="form-section">${t('preferences')}</div>
+          <div class="field"><label>${t('language')}</label>
+            <select id="emLang">
+              <option value="English" ${u.language === 'English' ? 'selected' : ''}>English</option>
+              <option value="Français" ${u.language === 'Français' ? 'selected' : ''}>Français</option>
+            </select>
+          </div>
+
           <div class="error-text" id="emError"></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" id="emCancel">${t('cancel')}</button>
@@ -1334,10 +1361,18 @@
       e.preventDefault();
       try {
         await api(`/api/users/${u.id}`, { method: 'PATCH', body: {
+          name: document.getElementById('emName').value,
+          phone: document.getElementById('emPhone').value,
+          dateOfBirth: document.getElementById('emDob').value,
+          street: document.getElementById('emStreet').value,
+          city: document.getElementById('emCity').value,
+          postalCode: document.getElementById('emPostal').value,
+          country: document.getElementById('emCountry').value,
           jobTitle: document.getElementById('emJobTitle').value,
           department: document.getElementById('emDept').value,
           role: document.getElementById('emRole').value,
           active: document.getElementById('emActive').checked,
+          language: document.getElementById('emLang').value,
         } });
         modalRoot.remove();
         viewTeam();

@@ -264,7 +264,12 @@ route('PATCH', '/api/users/:id', async (req, res, ctx, params, body) => {
   const id = Number(params.id);
   const target = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!target) return sendError(res, 404, 'User not found');
-  const fields = ['name', 'jobTitle', 'department', 'role', 'active', 'phone', 'street', 'city', 'postalCode', 'country'];
+  // Everything an employee can set on their own Profile, plus the admin-managed
+  // fields, so an admin can correct anything a member entered.
+  const fields = [
+    'name', 'jobTitle', 'department', 'role', 'active',
+    'phone', 'street', 'city', 'postalCode', 'country', 'dateOfBirth', 'language',
+  ];
   const updates = [];
   const values = [];
   for (const f of fields) {
