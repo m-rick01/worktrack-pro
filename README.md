@@ -35,6 +35,19 @@ The seed script prints the admin email/password it created (from `ADMIN_EMAIL`
 / `ADMIN_PASSWORD` in `.env`, or sensible defaults). You'll be asked to set a
 new password on first login.
 
+## Before you deploy
+
+- **Don't upload `data/` or `.env`.** The local database holds test accounts and
+  practice entries, and the local `.env` points at a development machine.
+  Production gets a fresh database from `src/seed.js` and its settings from the
+  cPanel environment variables below.
+- **`MAIL_DRY_RUN` must be false or unset.** Left at `true`, nobody receives an
+  invite or a password reset and reset links are written to the server log.
+- **`APP_URL` must be the real public URL.** Every invite and reset link is built
+  from it; a stale value produces links that go nowhere.
+- Serving over HTTPS also marks the session cookie `Secure`, which is derived
+  from `APP_URL` starting with `https://`.
+
 ## Deploying on PlanetHoster (cPanel "Setup Node.js App")
 
 1. **Upload the project** to your hosting account (e.g. via cPanel File Manager,
@@ -44,14 +57,14 @@ new password on first login.
    - **Node.js version**: 22.x or newer.
    - **Application mode**: Production.
    - **Application root**: the folder you uploaded to (e.g. `worktrack-pro`).
-   - **Application URL**: `orthoclic.ca` with URI `/timesheet` (or a subdomain
-     if you'd rather have `timesheet.orthoclic.ca`).
+   - **Application URL**: `orthoclic.ca` with URI `/time` (or a subdomain
+     if you'd rather have `time.orthoclic.ca`).
    - **Application startup file**: `src/server.js`.
 3. Click **Create**, then open the **Environment variables** section for the
    app and set (mirroring `.env.example`):
-   - `BASE_PATH=/timesheet` (must match the URI you chose above; leave empty
+   - `BASE_PATH=/time` (must match the URI you chose above; leave empty
      if you used a subdomain instead of a subpath).
-   - `APP_URL=https://orthoclic.ca/timesheet` (used in emails).
+   - `APP_URL=https://orthoclic.ca/time` (used in emails).
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — use a
      mailbox on your domain (cPanel → Email Accounts) so account-invite and
      approval/rejection emails actually send.
@@ -73,7 +86,7 @@ new password on first login.
    This creates your first admin account and the default task types. Do not
    run it again after that (it's safe to — it just skips creating a second
    admin — but it only needs to run once).
-6. Visit `https://orthoclic.ca/timesheet`, sign in with the admin account, and
+6. Visit `https://orthoclic.ca/time`, sign in with the admin account, and
    set a new password when prompted.
 
 ### Notes on file uploads and the database
