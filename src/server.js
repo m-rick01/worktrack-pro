@@ -11,7 +11,17 @@ const { handleApi } = require('./api');
 const { sendError } = require('./http');
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, ''); // e.g. "/timesheet" or ""
+
+// Where the app is mounted publicly. Used to build the asset URLs and the API
+// prefix in the page we serve, because the browser asks for them by the public
+// address. Passenger (cPanel/N0C "Node.js app" with a URI) reports this itself.
+const BASE_PATH = (process.env.PASSENGER_BASE_URI || process.env.BASE_PATH || '').replace(/\/+$/, '');
+
+// How much to strip off an incoming request. Passenger has already removed its
+// base URI by the time the request reaches us, so stripping it a second time
+// would turn "/time/css/styles.css" into a 404. Under bare node nothing strips
+// it for us, so there we do it ourselves.
+const STRIP_PREFIX = process.env.PASSENGER_BASE_URI ? '' : BASE_PATH;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 const MIME = {
@@ -68,11 +78,11 @@ function serveStatic(req, res, relPath) {
 const server = http.createServer(async (req, res) => {
   let pathname = url.parse(req.url).pathname;
 
-  // Strip configured base path so the app can be mounted under a subpath
-  // (e.g. orthoclic.ca/timesheet) on the hosting provider.
-  if (BASE_PATH) {
-    if (pathname === BASE_PATH) pathname = '/';
-    else if (pathname.startsWith(BASE_PATH + '/')) pathname = pathname.slice(BASE_PATH.length);
+  // Strip the mount prefix so the app can be served under a subpath
+  // (e.g. orthoclic.ca/time). Skipped under Passenger, which already did it.
+  if (STRIP_PREFIX) {
+    if (pathname === STRIP_PREFIX) pathname = '/';
+    else if (pathname.startsWith(STRIP_PREFIX + '/')) pathname = pathname.slice(STRIP_PREFIX.length);
     else {
       // Request outside our mounted base path — 404 (including bare "/").
       res.writeHead(404);
