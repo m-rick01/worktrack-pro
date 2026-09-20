@@ -40,7 +40,7 @@ new password on first login.
 - **Don't upload `data/` or `.env`.** The local database holds test accounts and
   practice entries, and the local `.env` points at a development machine.
   Production gets a fresh database from `src/seed.js` and its settings from the
-  cPanel environment variables below.
+  panel environment variables below.
 - **`MAIL_DRY_RUN` must be false or unset.** Left at `true`, nobody receives an
   invite or a password reset and reset links are written to the server log.
 - **`APP_URL` must be the real public URL.** Every invite and reset link is built
@@ -48,12 +48,19 @@ new password on first login.
 - Serving over HTTPS also marks the session cookie `Secure`, which is derived
   from `APP_URL` starting with `https://`.
 
-## Deploying on PlanetHoster (cPanel "Setup Node.js App")
+## Deploying on PlanetHoster (N0C panel)
 
-1. **Upload the project** to your hosting account (e.g. via cPanel File Manager,
-   Git, or FTP) — for example into `~/worktrack-pro`, alongside or above your
-   `orthoclic.ca` document root.
-2. In cPanel, open **Setup Node.js App** and click **Create Application**:
+**Check this first:** the app needs **Node 22.5 or newer** for the built-in
+`node:sqlite` module. In the N0C panel, open **Langages → Node.js** and confirm
+that version is offered. Nothing below 22.5 will start, and no amount of
+configuration works around it — the database module simply isn't there.
+
+1. **Get the code onto the server**, into e.g. `/home/<user>/worktrack-pro`:
+   - over SSH (N0C shows the host and port on its dashboard):
+     `git clone https://github.com/m-rick01/worktrack-pro.git` — a private repo
+     will ask for a GitHub username and a personal access token, not a password;
+   - or upload the files through **Fichiers** (File Manager).
+2. In the N0C panel, open **Langages → Node.js** and create the application:
    - **Node.js version**: 22.x or newer.
    - **Application mode**: Production.
    - **Application root**: the folder you uploaded to (e.g. `worktrack-pro`).
@@ -61,12 +68,12 @@ new password on first login.
      if you'd rather have `time.orthoclic.ca`).
    - **Application startup file**: `src/server.js`.
 3. Click **Create**, then open the **Environment variables** section for the
-   app and set (mirroring `.env.example`):
+   application and set (mirroring `.env.example`):
    - `BASE_PATH=/time` (must match the URI you chose above; leave empty
      if you used a subdomain instead of a subpath).
    - `APP_URL=https://orthoclic.ca/time` (used in emails).
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` — use a
-     mailbox on your domain (cPanel → Email Accounts) so account-invite and
+     mailbox on your domain (N0C → Messagerie) so account-invite and
      approval/rejection emails actually send.
    - `MAIL_DRY_RUN` — leave this **false or unset in production**. Set to `true`
      it stops all outgoing mail, so nobody would receive an invite or a password
@@ -74,12 +81,11 @@ new password on first login.
    - `DB_PATH` — optional, defaults to `./data/worktrack.db` inside the app
      folder; make sure that folder is writable (it is, by default, once the
      Node app is created).
-   - There's no `npm install` step needed — the app has no dependencies — but
-     cPanel's interface may still show an "npm install" button; running it is
+   - There is no `npm install` step needed — the app has no dependencies — but
+     the panel may still show an "npm install" button; running it is
      harmless (it will just report there's nothing to install).
-4. Start (or restart) the app from the Node.js App page.
-5. Run the one-time seed **once**, via the "Run JS script" / terminal option
-   cPanel provides for Node apps (or SSH if you have it):
+4. Start (or restart) the application from the Node.js page.
+5. Run the one-time seed **once**, over SSH (or the panel's run-script option):
    ```bash
    ADMIN_EMAIL=you@orthoclic.ca ADMIN_PASSWORD=some-strong-password node src/seed.js
    ```
