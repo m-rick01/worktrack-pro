@@ -17,11 +17,10 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 // address. Passenger (cPanel/N0C "Node.js app" with a URI) reports this itself.
 const BASE_PATH = (process.env.PASSENGER_BASE_URI || process.env.BASE_PATH || '').replace(/\/+$/, '');
 
-// How much to strip off an incoming request. Passenger has already removed its
-// base URI by the time the request reaches us, so stripping it a second time
-// would turn "/time/css/styles.css" into a 404. Under bare node nothing strips
-// it for us, so there we do it ourselves.
-const STRIP_PREFIX = process.env.PASSENGER_BASE_URI ? '' : BASE_PATH;
+// Whether the prefix is still on the incoming path depends on what is in front
+// of us: bare node leaves it, and a proxy may or may not strip it before
+// forwarding. Rather than depend on which, the router below removes the prefix
+// only when it is actually there.
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 const MIME = {
@@ -78,16 +77,13 @@ function serveStatic(req, res, relPath) {
 const server = http.createServer(async (req, res) => {
   let pathname = url.parse(req.url).pathname;
 
-  // Strip the mount prefix so the app can be served under a subpath
-  // (e.g. orthoclic.ca/time). Skipped under Passenger, which already did it.
-  if (STRIP_PREFIX) {
-    if (pathname === STRIP_PREFIX) pathname = '/';
-    else if (pathname.startsWith(STRIP_PREFIX + '/')) pathname = pathname.slice(STRIP_PREFIX.length);
-    else {
-      // Request outside our mounted base path — 404 (including bare "/").
-      res.writeHead(404);
-      return res.end('Not found');
-    }
+  // Remove the mount prefix when the request still carries it, so the app works
+  // both behind a proxy that forwards the full path and one that has already
+  // stripped it. A path without the prefix is served as-is rather than 404'd:
+  // under a mount nothing outside the prefix can reach us anyway.
+  if (BASE_PATH) {
+    if (pathname === BASE_PATH) pathname = '/';
+    else if (pathname.startsWith(BASE_PATH + '/')) pathname = pathname.slice(BASE_PATH.length);
   }
   req.url = pathname + (req.url.includes('?') ? '?' + req.url.split('?')[1] : '');
 
