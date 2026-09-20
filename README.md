@@ -55,6 +55,19 @@ new password on first login.
 that version is offered. Nothing below 22.5 will start, and no amount of
 configuration works around it — the database module simply isn't there.
 
+`node:sqlite` shipped in 22.5 behind `--experimental-sqlite` and was only
+unflagged in a later release, so on an early 22.x you must also set
+`NODE_OPTIONS=--experimental-sqlite` (step 3). To find out which case you are in,
+run this on the server with the version you intend to use:
+
+```bash
+node -e "require('node:sqlite'); console.log('available unflagged')"
+```
+
+If it prints the message, you don't need the flag. If it throws
+`ERR_UNKNOWN_BUILTIN_MODULE`, you do — and the app says so on startup rather
+than failing cryptically.
+
 1. **Get the code onto the server**, into e.g. `/home/<user>/worktrack-pro`:
    - over SSH (N0C shows the host and port on its dashboard):
      `git clone https://github.com/m-rick01/worktrack-pro.git` — a private repo
@@ -69,6 +82,9 @@ configuration works around it — the database module simply isn't there.
    - **Application startup file**: `src/server.js`.
 3. Click **Create**, then open the **Environment variables** section for the
    application and set (mirroring `.env.example`):
+   - `NODE_OPTIONS=--experimental-sqlite` — needed on a Node 22.x that still
+     has `node:sqlite` behind the flag (see the version check above). Harmless
+     to leave set on a newer runtime.
    - `BASE_PATH=/time` (must match the URI you chose above; leave empty
      if you used a subdomain instead of a subpath).
    - `APP_URL=https://orthoclic.ca/time` (used in emails).

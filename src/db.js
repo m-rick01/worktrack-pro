@@ -1,7 +1,27 @@
 // SQLite database layer using Node's built-in node:sqlite (no external deps).
 const path = require('node:path');
 const fs = require('node:fs');
-const { DatabaseSync } = require('node:sqlite');
+
+// node:sqlite shipped in Node 22.5 behind --experimental-sqlite and was only
+// unflagged in a later release. On a host still on an early 22.x this require
+// throws ERR_UNKNOWN_BUILTIN_MODULE, which says nothing useful, so explain it.
+let DatabaseSync;
+try {
+  ({ DatabaseSync } = require('node:sqlite'));
+} catch (err) {
+  console.error(
+    [
+      '',
+      `This app needs Node's built-in SQLite module, which ${process.version} did not provide.`,
+      '',
+      'Either start Node with the flag:            node --experimental-sqlite src/server.js',
+      'or, on a hosting panel, set the variable:   NODE_OPTIONS=--experimental-sqlite',
+      'or run a Node release where it is unflagged (23.4+, or a late 22.x LTS).',
+      '',
+    ].join('\n')
+  );
+  process.exit(1);
+}
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
