@@ -521,6 +521,10 @@
               <label>${t('forcePw_label')}</label>
               <input type="password" id="newPw" minlength="8" required />
             </div>
+            <div class="field">
+              <label>${t('reset_confirm')}</label>
+              <input type="password" id="newPw2" minlength="8" required />
+            </div>
             <button class="btn btn-primary" style="width:100%" type="submit">${t('continue')}</button>
             <div class="error-text" id="pwError"></div>
           </form>
@@ -530,6 +534,12 @@
     document.getElementById('pwForm').onsubmit = async (e) => {
       e.preventDefault();
       const newPassword = document.getElementById('newPw').value;
+      // Without this, a single typo in a field you can't read sets a password
+      // nobody knows, and the account is locked out on the spot.
+      if (newPassword !== document.getElementById('newPw2').value) {
+        document.getElementById('pwError').textContent = t('reset_mismatch');
+        return;
+      }
       try {
         await api('/api/change-password', { method: 'POST', body: { newPassword } });
         state.user.mustChangePassword = false;
@@ -834,6 +844,7 @@
         <h3 style="margin-top:0">${t('changePassword')}</h3>
         <div class="field"><label>${t('currentPassword')}</label><input type="password" id="pCurPw" /></div>
         <div class="field"><label>${t('newPassword')}</label><input type="password" id="pNewPw" /></div>
+        <div class="field"><label>${t('reset_confirm')}</label><input type="password" id="pNewPw2" /></div>
         <button class="btn btn-secondary" id="pwChangeBtn">${t('updatePassword')}</button>
         <div class="error-text" id="pwChangeMsg"></div>
       </div>
@@ -865,6 +876,13 @@
       }
     };
     document.getElementById('pwChangeBtn').onclick = async () => {
+      // Same trap as the forced change: mistype this and the old password is
+      // already gone, so there is nothing left to get back in with.
+      if (document.getElementById('pNewPw').value !== document.getElementById('pNewPw2').value) {
+        document.getElementById('pwChangeMsg').style.color = 'var(--danger)';
+        document.getElementById('pwChangeMsg').textContent = t('reset_mismatch');
+        return;
+      }
       try {
         await api('/api/change-password', { method: 'POST', body: {
           currentPassword: document.getElementById('pCurPw').value,
