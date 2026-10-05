@@ -53,6 +53,7 @@
       shiftStart: 'Start', shiftEnd: 'End', breakMinutes: 'Break (min)',
       hoursFromShift: 'Calculated from your start and end times.',
       hoursManual: 'Fill in a start and end time to calculate this automatically.',
+      hoursAfterBreak: '{hours}h once the break is taken off.',
       cancel: 'Cancel', saveEntry: 'Save Entry', submitForApproval: 'Submit for Approval',
 
       history_title: 'History', history_sub: 'View your past timesheet entries',
@@ -162,6 +163,7 @@
       shiftStart: 'Début', shiftEnd: 'Fin', breakMinutes: 'Pause (min)',
       hoursFromShift: 'Calculé à partir de vos heures de début et de fin.',
       hoursManual: 'Entrez une heure de début et de fin pour le calcul automatique.',
+      hoursAfterBreak: '{hours}h une fois la pause déduite.',
       cancel: 'Annuler', saveEntry: "Enregistrer l'entrée", submitForApproval: 'Soumettre pour approbation',
 
       history_title: 'Historique', history_sub: 'Consultez vos entrées de temps passées',
@@ -750,6 +752,16 @@
     });
   }
 
+  // What the Hours field shows: time at work, before the break comes off. The
+  // stored figure is already net, so reopening an entry has to add the break
+  // back — otherwise saving it again would deduct the same break a second time.
+  // Entries logged as a shift get their hours from the times instead.
+  function grossHours(entry) {
+    if (!entry) return 8;
+    if (entry.startTime && entry.endTime) return entry.hours;
+    return Math.round((entry.hours + (entry.breakMinutes || 0) / 60) * 100) / 100;
+  }
+
   function openEntryModal(dateStr, entry) {
     const locked = entry && !['draft', 'pending'].includes(entry.status);
     const defaultTaskId = entry ? entry.taskTypeId : (state.taskTypes.find((tt) => tt.active) || {}).id;
@@ -778,7 +790,7 @@
           <div class="row">
             <div class="col field">
               <label>${t('hours')}</label>
-              <input type="number" step="0.25" min="0" max="24" id="entryHours" value="${entry ? entry.hours : 8}" ${locked ? 'disabled' : ''} required />
+              <input type="number" step="0.25" min="0" max="24" id="entryHours" value="${grossHours(entry)}" ${locked ? 'disabled' : ''} required />
               <div class="hint" id="entryHoursHint"></div>
             </div>
             <div class="col field">
@@ -839,9 +851,16 @@
       const calculated = previewShiftHours(startEl.value, endEl.value, breakEl.value);
       if (calculated === null) {
         // No usable shift: the hours field goes back to being typed by hand,
-        // which is how a holiday or a sick day gets logged.
+        // which is how a holiday or a sick day gets logged. What is typed is
+        // time at work, so show what remains once the break comes off.
         hoursEl.readOnly = false;
-        hintEl.textContent = startEl.value || endEl.value ? '' : t('hoursManual');
+        const gross = Number(hoursEl.value);
+        const breakHours = (Number(breakEl.value) || 0) / 60;
+        if (breakHours > 0 && gross > breakHours) {
+          hintEl.textContent = t('hoursAfterBreak', { hours: Math.round((gross - breakHours) * 100) / 100 });
+        } else {
+          hintEl.textContent = startEl.value || endEl.value ? '' : t('hoursManual');
+        }
       } else {
         hoursEl.value = calculated;
         hoursEl.readOnly = true;
@@ -850,7 +869,8 @@
     }
 
     if (!locked) {
-      for (const el of [startEl, endEl, breakEl]) el.oninput = syncHoursFromShift;
+      // hoursEl is included so the "after the break" line follows what is typed.
+      for (const el of [startEl, endEl, breakEl, hoursEl]) el.oninput = syncHoursFromShift;
       syncHoursFromShift();
     }
 

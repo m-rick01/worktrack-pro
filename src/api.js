@@ -412,7 +412,16 @@ function resolveEntryHours(body, res) {
     sendError(res, 400, 'Hours must be between 0 and 24');
     return null;
   }
-  return { hours: h, startTime: '', endTime: '', breakMinutes: 0 };
+  // The hours typed in are time at work, so an unpaid break comes off them too.
+  // It used to be dropped here, which left the break field looking live while
+  // doing nothing. The stored figure is the net one; the modal adds the break
+  // back when it reopens the entry, so saving again does not deduct it twice.
+  const worked = Math.round((h - breakMinutes / 60) * 100) / 100;
+  if (worked <= 0) {
+    sendError(res, 400, 'The break cannot be as long as the hours worked');
+    return null;
+  }
+  return { hours: worked, startTime: '', endTime: '', breakMinutes };
 }
 
 route('POST', '/api/entries', async (req, res, ctx, params, body) => {
