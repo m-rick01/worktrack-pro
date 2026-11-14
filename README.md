@@ -172,6 +172,40 @@ data/           SQLite database file (created automatically)
   Settings (pay cycle length + reference date with a live preview, overtime
   threshold, notification toggles, company name).
 
+## Installing the app (phone or computer)
+
+WorkTrack is an installable web app, so it can sit on a home screen or in the
+taskbar and open in its own window, with no app store:
+
+- **Chrome, Edge and Android**: an "Install app" button appears at the bottom of
+  the sidebar (and on the sign-in screen) when the browser says the app can be
+  installed.
+- **iPhone and iPad**: Safari has no install prompt, so the same button shows the
+  steps instead: Share, then Add to Home Screen.
+- Already installed, or a browser that can't install (e.g. desktop Firefox): no
+  button is shown.
+
+Installing needs HTTPS, so the button only appears on the live site (or on
+`localhost` while developing), not on a plain `http://192.168...` address.
+
+What makes it work: `public/manifest.webmanifest` (name, colours, icons) and
+`public/sw.js`. The worker **deliberately caches nothing** — timesheets are live
+data and a cached copy could show stale hours or keep an old version of the app
+alive after a deploy. All it adds is a readable "you're offline" page when a page
+load fails. Requests under `/api/`, including the CSV and PDF downloads, never
+go through it.
+
+The icons are generated from the logo, and are committed, so they only need
+regenerating if the logo changes:
+
+```bash
+node scripts/make-icons.js
+```
+
+The logo has its "Laboratoire dentaire" lettering inside the tooth, which is
+unreadable at icon size, so the script erases it (by measured coordinates, noted
+in the script) and uses the tooth alone. Re-measure those if the logo is replaced.
+
 ## What's intentionally out of scope
 
 No data was migrated from the old Base44 app (per the original request, this

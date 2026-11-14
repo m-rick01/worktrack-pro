@@ -28,6 +28,7 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
@@ -44,9 +45,15 @@ function serveIndexHtml(res) {
     }
     // Rewrite root-relative asset paths so they resolve correctly regardless of
     // whether the page was requested with or without a trailing slash on BASE_PATH.
+    // The manifest and icons need the same treatment: a page served at "/time"
+    // (no trailing slash) resolves a relative "manifest.webmanifest" against "/",
+    // not "/time/", and the install prompt silently never appears.
     const injected = html
       .replace('href="css/styles.css"', `href="${BASE_PATH}/css/styles.css"`)
       .replace('src="js/app.js"', `src="${BASE_PATH}/js/app.js"`)
+      .replace('href="manifest.webmanifest"', `href="${BASE_PATH}/manifest.webmanifest"`)
+      .split('href="img/icon-192.png"')
+      .join(`href="${BASE_PATH}/img/icon-192.png"`)
       .replace(
         '</head>',
         `<script>window.APP_BASE = ${JSON.stringify(BASE_PATH)};</script></head>`
