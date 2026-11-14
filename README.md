@@ -175,17 +175,15 @@ data/           SQLite database file (created automatically)
 ## Installing the app (phone or computer)
 
 WorkTrack is an installable web app, so it can sit on a home screen or in the
-taskbar and open in its own window, with no app store:
+taskbar and open in its own window, with no app store. There is no install
+button in the app itself: installing is left to the browser's own option.
 
-- **Chrome, Edge and Android**: an "Install app" button appears at the bottom of
-  the sidebar (and on the sign-in screen) when the browser says the app can be
-  installed.
-- **iPhone and iPad**: Safari has no install prompt, so the same button shows the
-  steps instead: Share, then Add to Home Screen.
-- Already installed, or a browser that can't install (e.g. desktop Firefox): no
-  button is shown.
+- **Chrome and Edge on a computer**: the install icon at the right end of the
+  address bar, or the browser menu's "Install WorkTrack Pro".
+- **Chrome on Android**: the menu's "Install app" / "Add to Home screen".
+- **iPhone and iPad (Safari)**: the Share button, then "Add to Home Screen".
 
-Installing needs HTTPS, so the button only appears on the live site (or on
+Installing needs HTTPS, so the option only appears on the live site (or on
 `localhost` while developing), not on a plain `http://192.168...` address.
 
 What makes it work: `public/manifest.webmanifest` (name, colours, icons) and

@@ -15,13 +15,6 @@
 
       login_email: 'Email', login_password: 'Password', login_signIn: 'Sign In',
       login_forgot: 'Forgot your password?',
-      install_app: 'Install app',
-      install_ios_title: 'Install WorkTrack',
-      install_ios_intro: 'On iPhone and iPad, install it from the Share menu in Safari:',
-      install_ios_1: 'Tap the Share button at the bottom of the screen.',
-      install_ios_2: 'Choose "Add to Home Screen".',
-      install_ios_3: 'Tap "Add". WorkTrack will appear with your other apps.',
-      install_ios_done: 'Got it',
       forgot_title: 'Reset your password',
       forgot_sub: 'Enter your email address and we will send you a link to choose a new password.',
       forgot_send: 'Send reset link',
@@ -132,13 +125,6 @@
 
       login_email: 'Courriel', login_password: 'Mot de passe', login_signIn: 'Se connecter',
       login_forgot: 'Mot de passe oublié ?',
-      install_app: "Installer l'application",
-      install_ios_title: 'Installer WorkTrack',
-      install_ios_intro: 'Sur iPhone et iPad, installez-la depuis le menu Partager de Safari :',
-      install_ios_1: "Touchez le bouton Partager au bas de l'écran.",
-      install_ios_2: "Choisissez « Sur l'écran d'accueil ».",
-      install_ios_3: 'Touchez « Ajouter ». WorkTrack apparaîtra avec vos autres applications.',
-      install_ios_done: 'Compris',
       forgot_title: 'Réinitialiser votre mot de passe',
       forgot_sub: 'Entrez votre courriel et nous vous enverrons un lien pour choisir un nouveau mot de passe.',
       forgot_send: 'Envoyer le lien',
@@ -354,89 +340,6 @@
 
   function navigate(hash) { location.hash = hash; }
 
-  // ---------- Installing the app ----------
-  // Chrome, Edge and Android offer an install through a one-off event, which can
-  // arrive before anyone has logged in, so it is kept here until a button asks
-  // for it. iPhone and iPad never fire it: Safari only installs from its Share
-  // menu, so there the button explains how instead.
-  let installPrompt = null;
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); // hold it back; the button decides when to show it
-    installPrompt = e;
-    renderInstallSlots();
-  });
-  window.addEventListener('appinstalled', () => {
-    installPrompt = null;
-    renderInstallSlots();
-  });
-
-  function isStandalone() {
-    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  }
-
-  function isIos() {
-    const ua = window.navigator.userAgent || '';
-    // iPadOS 13+ reports itself as a Mac, so tell it apart by its touch screen.
-    return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && window.navigator.maxTouchPoints > 1);
-  }
-
-  // 'prompt' = the browser can install it now, 'ios' = show the Share-menu steps,
-  // null = nothing to offer (already installed, or this browser can't install).
-  function installMode() {
-    if (isStandalone()) return null;
-    if (installPrompt) return 'prompt';
-    if (isIos()) return 'ios';
-    return null;
-  }
-
-  // Fills every <div data-install-slot="..."> with an install button, or empties
-  // it. The slot's value is the CSS class for the button, since the sidebar and
-  // the login card style it differently.
-  function renderInstallSlots() {
-    const mode = installMode();
-    document.querySelectorAll('[data-install-slot]').forEach((slot) => {
-      if (!mode) {
-        slot.innerHTML = '';
-        return;
-      }
-      slot.innerHTML = `<button type="button" class="${slot.getAttribute('data-install-slot')}">${t('install_app')}</button>`;
-      slot.firstElementChild.onclick = runInstall;
-    });
-  }
-
-  async function runInstall() {
-    const mode = installMode();
-    if (mode === 'ios') return openIosInstallModal();
-    if (mode !== 'prompt') return;
-    installPrompt.prompt();
-    await installPrompt.userChoice; // outcome handled by 'appinstalled'
-    installPrompt = null; // a prompt can only be used once
-    renderInstallSlots();
-  }
-
-  function openIosInstallModal() {
-    const modalRoot = document.createElement('div');
-    modalRoot.className = 'modal-backdrop';
-    modalRoot.innerHTML = `
-      <div class="modal">
-        <h3>${t('install_ios_title')}</h3>
-        <div class="sub">${t('install_ios_intro')}</div>
-        <ol class="install-steps">
-          <li>${t('install_ios_1')}</li>
-          <li>${t('install_ios_2')}</li>
-          <li>${t('install_ios_3')}</li>
-        </ol>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-primary" id="installIosClose">${t('install_ios_done')}</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modalRoot);
-    modalRoot.addEventListener('click', (e) => { if (e.target === modalRoot) modalRoot.remove(); });
-    document.getElementById('installIosClose').onclick = () => modalRoot.remove();
-  }
-
   // ---------- Shell / Layout ----------
   function layout(activeHash, title, sub, contentHtml) {
     const u = state.user;
@@ -482,7 +385,6 @@
           <div class="footer">
             <div class="user-name">${esc(u.name)}</div>
             <div class="user-email">${esc(u.email)}</div>
-            <div data-install-slot="install-btn"></div>
             <button class="signout" id="signOutBtn">${t('signOut')}</button>
           </div>
         </div>
@@ -493,7 +395,6 @@
         </div>
       </div>
     `;
-    renderInstallSlots();
     document.getElementById('signOutBtn').onclick = async () => {
       await api('/api/logout', { method: 'POST' });
       state.user = null;
@@ -529,12 +430,10 @@
             <div class="error-text" id="loginError"></div>
           </form>
           <button class="link-btn" id="forgotLink">${t('login_forgot')}</button>
-          <div data-install-slot="link-btn"></div>
         </div>
       </div>
     `;
     document.getElementById('forgotLink').onclick = renderForgotPassword;
-    renderInstallSlots();
     document.getElementById('loginForm').onsubmit = async (e) => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();

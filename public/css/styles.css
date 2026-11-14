@@ -163,19 +163,6 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
 .member-row .hint { display: block; }
 .member-row .member-chevron { flex-shrink: 0; color: var(--text-muted); font-size: 20px; line-height: 1; }
 
-/* Install button. The sidebar one is an outlined pill so it reads as an action
-   without competing with the nav; the login one is a plain link like the one
-   above it. */
-.sidebar .install-btn {
-  display: block; margin-top: 10px; padding: 7px 12px;
-  background: rgba(255,255,255,0.12); color: #fff;
-  border: 1px solid rgba(255,255,255,0.25); border-radius: 6px;
-  font-size: 13px; font-weight: 600;
-}
-.sidebar .install-btn:hover { background: rgba(255,255,255,0.2); }
-.install-steps { margin: 12px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.7; }
-.install-steps li { margin-bottom: 4px; }
-
 .empty-state { color: var(--text-muted); padding: 40px 0; text-align: center; font-size: 14px; }
 
 .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
@@ -255,9 +242,6 @@ th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform
   }
   .sidebar .user-name, .sidebar .user-email { display: none; }
   .sidebar .signout { margin: 0; padding: 10px 12px; }
-  /* Install and Sign Out sit side by side in the bar rather than stacking. */
-  .sidebar .footer { display: flex; align-items: center; gap: 6px; }
-  .sidebar .install-btn { margin: 0; padding: 9px 12px; min-height: 38px; white-space: nowrap; }
 
   .main { padding: 20px 16px; }
   .page-title { font-size: 22px; }
