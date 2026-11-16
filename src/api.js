@@ -14,6 +14,7 @@ const {
   readMultipart,
 } = require('./utils');
 const { renderReportPdf } = require('./report-pdf');
+const { splitPayStubs } = require('./pdf-split');
 
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -216,6 +217,24 @@ route('PATCH', '/api/profile', async (req, res, ctx, params, body) => {
 });
 
 // ---------- USERS / TEAM (admin) ----------
+
+// "000000001" and "1" are the same employee number.
+function normalizePayrollNumber(v) {
+  const digits = String(v || '').replace(/\D/g, '');
+  return digits.replace(/^0+(?=\d)/, '');
+}
+
+// Two people with the same payroll number would make pay stub matching
+// ambiguous, so it is refused up front. Returns the other user, or null.
+function payrollNumberTakenBy(value, exceptUserId) {
+  const number = normalizePayrollNumber(value);
+  if (!number) return null;
+  return (
+    db.prepare('SELECT id, name, payrollNumber FROM users').all()
+      .find((u) => u.id !== exceptUserId && normalizePayrollNumber(u.payrollNumber) === number) || null
+  );
+}
+
 route('GET', '/api/users', async (req, res, ctx) => {
   if (!requireAdmin(ctx, res)) return;
   const rows = db.prepare('SELECT * FROM users ORDER BY name').all();
@@ -230,15 +249,18 @@ route('POST', '/api/users', async (req, res, ctx, params, body) => {
   const normalizedEmail = String(email).toLowerCase().trim();
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(normalizedEmail);
   if (existing) return sendError(res, 409, 'A user with this email already exists');
+  const payrollNumber = String(body.payrollNumber || '').trim();
+  const taken = payrollNumberTakenBy(payrollNumber, null);
+  if (taken) return sendError(res, 409, `This employee number already belongs to ${taken.name}`);
 
   const tempPassword = auth.generateTempPassword();
   const hash = auth.hashPassword(tempPassword);
   const info = db
     .prepare(
-      `INSERT INTO users (name, email, passwordHash, role, jobTitle, department, mustChangePassword)
-       VALUES (?, ?, ?, ?, ?, ?, 1)`
+      `INSERT INTO users (name, email, passwordHash, role, jobTitle, department, payrollNumber, mustChangePassword)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`
     )
-    .run(name.trim(), normalizedEmail, hash, role, jobTitle || '', department || '');
+    .run(name.trim(), normalizedEmail, hash, role, jobTitle || '', department || '', payrollNumber);
 
   const settings = getSettings();
   if (settings.notifyNewAccount) {
@@ -269,8 +291,13 @@ route('PATCH', '/api/users/:id', async (req, res, ctx, params, body) => {
   // fields, so an admin can correct anything a member entered.
   const fields = [
     'name', 'jobTitle', 'department', 'role', 'active',
-    'phone', 'street', 'city', 'postalCode', 'country', 'dateOfBirth', 'language',
+    'phone', 'street', 'city', 'postalCode', 'country', 'dateOfBirth', 'language', 'payrollNumber',
   ];
+  if (body.payrollNumber !== undefined) {
+    body.payrollNumber = String(body.payrollNumber).trim();
+    const taken = payrollNumberTakenBy(body.payrollNumber, id);
+    if (taken) return sendError(res, 409, `This employee number already belongs to ${taken.name}`);
+  }
   const updates = [];
   const values = [];
   for (const f of fields) {
@@ -821,6 +848,252 @@ route('GET', '/api/reports/pdf', async (req, res, ctx, params, body, query) => {
   res.end(pdf);
 });
 
+// ---------- PAY STUBS ----------
+// The admin uploads the payroll PDF for a pay period (exported from Nethris, all
+// employees in one file). It is split into one PDF per employee and each is
+// matched to a profile. Nothing is visible to an employee until the admin has
+// checked that stub and confirmed it.
+//
+// These are payroll records, so the PDFs live under uploads/paystubs/, which is
+// not committed, and are only ever served through the checks below.
+const PAYSTUBS_DIR = path.join(UPLOADS_DIR, 'paystubs');
+if (!fs.existsSync(PAYSTUBS_DIR)) fs.mkdirSync(PAYSTUBS_DIR, { recursive: true });
+
+// Accent-, case- and order-insensitive, so "Tremblay, Sarah" matches "Sarah Tremblay".
+function nameKey(v) {
+  return String(v || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ');
+}
+
+// Returns { userId, matchedBy } for a stub's detected fields, or nulls. A name
+// match is only accepted when exactly one person has that name, so two people
+// with the same name never get each other's stub.
+function matchEmployee(fields, users) {
+  const number = normalizePayrollNumber(fields.payrollNumber);
+  if (number) {
+    const byNumber = users.filter((u) => normalizePayrollNumber(u.payrollNumber) === number);
+    if (byNumber.length === 1) return { userId: byNumber[0].id, matchedBy: 'payrollNumber' };
+  }
+  const key = nameKey(fields.name);
+  if (key) {
+    const byName = users.filter((u) => nameKey(u.name) === key);
+    if (byName.length === 1) return { userId: byName[0].id, matchedBy: 'name' };
+  }
+  return { userId: null, matchedBy: null };
+}
+
+function usersMap() {
+  const map = new Map();
+  for (const u of db.prepare('SELECT id, name, email, payrollNumber, active FROM users').all()) map.set(u.id, u);
+  return map;
+}
+
+function serializePayStub(s, usersById) {
+  const u = s.userId ? usersById.get(s.userId) : null;
+  return {
+    id: s.id,
+    batchId: s.batchId,
+    sourceFilename: s.sourceFilename,
+    userId: s.userId,
+    userName: u ? u.name : null,
+    userPayrollNumber: u ? u.payrollNumber || '' : null,
+    payrollNumber: s.payrollNumber,
+    detectedName: s.detectedName,
+    periodStart: s.periodStart,
+    periodEnd: s.periodEnd,
+    payDate: s.payDate,
+    pageCount: s.pageCount,
+    size: s.size,
+    status: s.status,
+    publishedAt: s.publishedAt,
+    createdAt: s.createdAt,
+  };
+}
+
+route('POST', '/api/paystubs/upload', async (req, res, ctx, params, body, query, multipart) => {
+  if (!requireAdmin(ctx, res)) return;
+  const file = multipart && multipart.files[0];
+  if (!file) return sendError(res, 400, 'No file was uploaded');
+
+  let parts;
+  try {
+    parts = splitPayStubs(file.data);
+  } catch (err) {
+    return sendError(res, 400, `Could not read this PDF: ${err.message}`);
+  }
+
+  const employees = db.prepare('SELECT id, name, payrollNumber FROM users WHERE active = 1').all();
+  const batchId = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+  const insert = db.prepare(
+    `INSERT INTO pay_stubs (batchId, sourceFilename, userId, payrollNumber, detectedName, periodStart, periodEnd,
+       payDate, pageCount, storedName, size, status, uploadedBy)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+  );
+
+  // All or nothing: a failure part-way must not leave some stubs recorded and
+  // their files missing, or files on disk that nothing points at.
+  const written = [];
+  const matchedBy = {};
+  try {
+    db.exec('BEGIN;');
+    for (const part of parts) {
+      const storedName = `${batchId}-${crypto.randomBytes(8).toString('hex')}.pdf`;
+      fs.writeFileSync(path.join(PAYSTUBS_DIR, storedName), part.pdf);
+      written.push(storedName);
+      const match = matchEmployee(part.fields, employees);
+      const info = insert.run(
+        batchId, file.filename, match.userId, part.fields.payrollNumber, part.fields.name,
+        part.fields.periodStart, part.fields.periodEnd, part.fields.payDate, part.pages,
+        storedName, part.pdf.length, ctx.user.id
+      );
+      matchedBy[info.lastInsertRowid] = match.matchedBy;
+    }
+    db.exec('COMMIT;');
+  } catch (err) {
+    db.exec('ROLLBACK;');
+    for (const name of written) fs.rmSync(path.join(PAYSTUBS_DIR, name), { force: true });
+    throw err;
+  }
+
+  const usersById = usersMap();
+  const rows = db.prepare('SELECT * FROM pay_stubs WHERE batchId = ? ORDER BY id').all(batchId);
+  sendJson(res, 201, {
+    stubs: rows.map((s) => ({ ...serializePayStub(s, usersById), matchedBy: matchedBy[s.id] || null })),
+  });
+});
+
+// Admin list. Each stub says whether another stub for the same person and pay
+// date already exists, so uploading the same file twice is caught at review.
+route('GET', '/api/paystubs', async (req, res, ctx, params, body, query) => {
+  if (!requireAdmin(ctx, res)) return;
+  const status = query.status === 'published' ? 'published' : 'pending';
+  const rows = db
+    .prepare(`SELECT * FROM pay_stubs WHERE status = ? ORDER BY payDate DESC, ${status === 'pending' ? 'id' : 'publishedAt DESC'}`)
+    .all(status);
+  const usersById = usersMap();
+  const duplicateOf = db.prepare(
+    `SELECT id, status FROM pay_stubs WHERE id != ? AND payDate = ? AND periodStart = ? AND periodEnd = ?
+       AND (userId = ? OR (payrollNumber != '' AND payrollNumber = ?)) LIMIT 1`
+  );
+  const stubs = rows.map((s) => {
+    const dup = s.payDate ? duplicateOf.get(s.id, s.payDate, s.periodStart, s.periodEnd, s.userId, s.payrollNumber) : null;
+    return { ...serializePayStub(s, usersById), duplicateStatus: dup ? dup.status : null };
+  });
+  sendJson(res, 200, { stubs });
+});
+
+// Reassign a stub that is still awaiting confirmation.
+route('PATCH', '/api/paystubs/:id', async (req, res, ctx, params, body) => {
+  if (!requireAdmin(ctx, res)) return;
+  const stub = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(Number(params.id));
+  if (!stub) return sendError(res, 404, 'Pay stub not found');
+  if (stub.status !== 'pending') return sendError(res, 400, 'This stub is already in the employee\'s profile');
+  let userId = null;
+  if (body.userId) {
+    const user = db.prepare('SELECT id FROM users WHERE id = ?').get(Number(body.userId));
+    if (!user) return sendError(res, 400, 'Employee not found');
+    userId = user.id;
+  }
+  db.prepare('UPDATE pay_stubs SET userId = ? WHERE id = ?').run(userId, stub.id);
+  const updated = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(stub.id);
+  sendJson(res, 200, { stub: serializePayStub(updated, usersMap()) });
+});
+
+// Confirm: the stub becomes visible in the employee's profile.
+route('POST', '/api/paystubs/:id/publish', async (req, res, ctx, params) => {
+  if (!requireAdmin(ctx, res)) return;
+  const stub = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(Number(params.id));
+  if (!stub) return sendError(res, 404, 'Pay stub not found');
+  if (stub.status !== 'pending') return sendError(res, 400, 'This stub is already in the employee\'s profile');
+  if (!stub.userId) return sendError(res, 400, 'Choose which employee this stub belongs to first');
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(stub.userId);
+  if (!user) return sendError(res, 400, 'Employee not found');
+
+  db.prepare(
+    `UPDATE pay_stubs SET status = 'published', publishedBy = ?, publishedAt = datetime('now') WHERE id = ?`
+  ).run(ctx.user.id, stub.id);
+
+  // Remember the employee number the first time a stub is confirmed for this
+  // person, so next pay period their stub is matched automatically. Skipped if
+  // another profile already holds that number, which would break the matching.
+  if (stub.payrollNumber && !normalizePayrollNumber(user.payrollNumber) && !payrollNumberTakenBy(stub.payrollNumber, user.id)) {
+    db.prepare('UPDATE users SET payrollNumber = ? WHERE id = ?').run(stub.payrollNumber, user.id);
+  }
+
+  const settings = getSettings();
+  if (settings.notifyPayStub) {
+    const appUrl = process.env.APP_URL || '/';
+    const fr = user.language === 'Français';
+    const range = stub.periodStart && stub.periodEnd ? stub.periodStart + (fr ? ' au ' : ' to ') + stub.periodEnd : '';
+    sendMail({
+      to: user.email,
+      subject: fr
+        ? `Nouveau talon de paie disponible — ${settings.companyName}`
+        : `A new pay stub is available — ${settings.companyName}`,
+      html: fr
+        ? `
+        <p>Bonjour ${user.name},</p>
+        <p>Votre talon de paie${stub.payDate ? ` payable le ${stub.payDate}` : ''}${range ? ` (période du ${range})` : ''} est maintenant disponible.</p>
+        <p><a href="${appUrl}#/my-paystubs">Consultez-le dans votre profil</a>.</p>
+      `
+        : `
+        <p>Hi ${user.name},</p>
+        <p>Your pay stub${stub.payDate ? ` payable on ${stub.payDate}` : ''}${range ? ` (pay period ${range})` : ''} is now available.</p>
+        <p><a href="${appUrl}#/my-paystubs">View it in your profile</a>.</p>
+      `,
+    }).catch((err) => console.error('[mail] failed to send pay stub email:', err.message));
+  }
+
+  const updated = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(stub.id);
+  sendJson(res, 200, { stub: serializePayStub(updated, usersMap()) });
+});
+
+// Reject a pending stub, or withdraw one already published by mistake. The
+// file is deleted with it.
+route('DELETE', '/api/paystubs/:id', async (req, res, ctx, params) => {
+  if (!requireAdmin(ctx, res)) return;
+  const stub = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(Number(params.id));
+  if (!stub) return sendError(res, 404, 'Pay stub not found');
+  db.prepare('DELETE FROM pay_stubs WHERE id = ?').run(stub.id);
+  fs.rmSync(path.join(PAYSTUBS_DIR, stub.storedName), { force: true });
+  sendJson(res, 200, { ok: true });
+});
+
+// The employee's own confirmed stubs.
+route('GET', '/api/my/paystubs', async (req, res, ctx) => {
+  if (!requireAuth(ctx, res)) return;
+  const rows = db
+    .prepare(`SELECT * FROM pay_stubs WHERE userId = ? AND status = 'published' ORDER BY payDate DESC, id DESC`)
+    .all(ctx.user.id);
+  const usersById = usersMap();
+  sendJson(res, 200, { stubs: rows.map((s) => serializePayStub(s, usersById)) });
+});
+
+// Admins can open any stub (to check it before confirming); an employee only
+// their own, and only once it has been confirmed. Anyone else gets the same
+// "not found" as for a stub that doesn't exist, so ids can't be probed.
+route('GET', '/api/paystubs/:id/file', async (req, res, ctx, params, body, query) => {
+  if (!requireAuth(ctx, res)) return;
+  const stub = db.prepare('SELECT * FROM pay_stubs WHERE id = ?').get(Number(params.id));
+  const allowed = stub && (ctx.user.role === 'admin' || (stub.userId === ctx.user.id && stub.status === 'published'));
+  if (!allowed) return sendError(res, 404, 'Pay stub not found');
+  const filePath = path.join(PAYSTUBS_DIR, stub.storedName);
+  if (!fs.existsSync(filePath)) return sendError(res, 404, 'The file is missing on the server');
+  const filename = `pay-stub-${stub.payDate || stub.id}.pdf`;
+  res.writeHead(200, {
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `${query.download ? 'attachment' : 'inline'}; filename="${filename}"`,
+    'Cache-Control': 'private, no-store',
+  });
+  fs.createReadStream(filePath).pipe(res);
+});
+
 // ---------- SETTINGS (admin) ----------
 route('GET', '/api/settings', async (req, res, ctx) => {
   if (!requireAuth(ctx, res)) return; // employees need companyName/language display, so read-only for all
@@ -836,6 +1109,7 @@ route('PATCH', '/api/settings', async (req, res, ctx, params, body) => {
     'notifyNewAccount',
     'notifyApproval',
     'notifyRejection',
+    'notifyPayStub',
     'companyName',
   ];
   const updates = [];
@@ -843,7 +1117,7 @@ route('PATCH', '/api/settings', async (req, res, ctx, params, body) => {
   for (const f of fields) {
     if (body[f] !== undefined) {
       updates.push(`${f} = ?`);
-      const boolFields = ['notifyNewAccount', 'notifyApproval', 'notifyRejection'];
+      const boolFields = ['notifyNewAccount', 'notifyApproval', 'notifyRejection', 'notifyPayStub'];
       values.push(boolFields.includes(f) ? (body[f] ? 1 : 0) : body[f]);
     }
   }

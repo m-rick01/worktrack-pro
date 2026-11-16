@@ -135,13 +135,18 @@ src/
   utils.js      Pay-cycle math, overtime aggregation, CSV, body/multipart parsing
   pdf.js        Minimal hand-rolled PDF writer (no pdfkit dependency)
   report-pdf.js Lays out the Reports screen as a PDF, in English or French
+  pdf-split.js  Splits a Nethris payroll PDF into one PDF per employee and reads
+                the employee number, name and pay period off each page
   seed.js       One-time setup script (first admin account + default tasks)
   env.js        Tiny .env file loader
 scripts/
   reset-password.js  Command-line password reset for a locked-out account
+  make-test-paystubs.js  Writes a FAKE payroll PDF for trying the pay stub upload
 public/
   index.html, css/styles.css, js/app.js   The entire frontend (vanilla JS, no build step)
-uploads/        Timesheet entry attachments (created automatically)
+uploads/        Timesheet entry attachments, and pay stubs under uploads/paystubs/
+                (created automatically; the pay stubs are payroll data — back it up,
+                never commit it. uploads/ is already git-ignored)
 data/           SQLite database file (created automatically)
 ```
 
@@ -164,6 +169,22 @@ data/           SQLite database file (created automatically)
 - Admins don't log their own hours: they get Profile plus the admin screens, and
   sign in to the Approvals queue rather than a timesheet. My Time and History are
   employee-only, and an admin who follows one of those links lands on Approvals.
+- Pay stubs: the admin uploads the pay stub PDF exported from Nethris (all
+  employees in one file) under Admin → Pay stubs. It is split into one PDF per
+  employee, and each is matched to a profile by the Nethris employee number
+  (set per member under Team) or, failing that, by name — a name only matches
+  when exactly one person has it. Each stub waits for the admin to check it and
+  confirm it; only then does it appear under the employee's "Pay stubs", with an
+  optional email (Settings) in their own language. A stub can be reassigned or
+  rejected before confirming, and withdrawn afterwards. Confirming a stub for
+  someone with no employee number on file records it, so the next pay period
+  matches automatically. Uploading the same period twice is flagged. Employees
+  can only ever open their own confirmed stubs; anything else answers "not
+  found". To try it without real payroll data: `node scripts/make-test-paystubs.js`
+  writes a fake file to `data/test-paystubs.pdf`.
+  Needs a Nethris export it can read: classic cross-reference table, not
+  encrypted, Flate or uncompressed content. Anything else is refused with a
+  message rather than half-processed.
 - Admin: Approvals queue, Reports (regular vs. overtime hours — overtime is
   anything past the configurable weekly threshold, default 40h, counted per
   employee — weekly chart, per-employee summary, CSV and PDF export), Team

@@ -179,6 +179,45 @@ if (!entryColumns.includes('breakMinutes')) {
   db.exec('ALTER TABLE time_entries ADD COLUMN breakMinutes INTEGER NOT NULL DEFAULT 0');
 }
 
+// Migration: the employee number printed on a pay stub (Nethris MATRICULE),
+// which is how each stub in an uploaded payroll file is matched to a person.
+if (!userColumns.includes('payrollNumber')) {
+  db.exec("ALTER TABLE users ADD COLUMN payrollNumber TEXT DEFAULT ''");
+}
+
+// Migration: whether to email an employee when a pay stub is put in their profile.
+const settingsColumns = db.prepare('PRAGMA table_info(settings)').all().map((c) => c.name);
+if (!settingsColumns.includes('notifyPayStub')) {
+  db.exec('ALTER TABLE settings ADD COLUMN notifyPayStub INTEGER NOT NULL DEFAULT 1');
+}
+
+// Pay stubs split out of an uploaded payroll PDF. A stub stays 'pending' (seen
+// only by admins) until an admin confirms it, which makes it 'published' and
+// visible in the employee's profile. userId is null while no employee matches.
+// The PDF itself lives on disk under uploads/paystubs/, named by storedName.
+db.exec(`
+CREATE TABLE IF NOT EXISTS pay_stubs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  batchId TEXT NOT NULL,
+  sourceFilename TEXT NOT NULL DEFAULT '',
+  userId INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  payrollNumber TEXT NOT NULL DEFAULT '',
+  detectedName TEXT NOT NULL DEFAULT '',
+  periodStart TEXT NOT NULL DEFAULT '',
+  periodEnd TEXT NOT NULL DEFAULT '',
+  payDate TEXT NOT NULL DEFAULT '',
+  pageCount INTEGER NOT NULL DEFAULT 1,
+  storedName TEXT NOT NULL,
+  size INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','published')),
+  uploadedBy INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  publishedBy INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  publishedAt TEXT,
+  createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pay_stubs_user ON pay_stubs(userId, status);
+`);
+
 // Ensure singleton settings row exists.
 const settingsRow = db.prepare('SELECT id FROM settings WHERE id = 1').get();
 if (!settingsRow) {
