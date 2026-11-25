@@ -23,7 +23,11 @@ const { PdfDoc } = require('../src/pdf');
 const args = process.argv.slice(2);
 const periodFlag = args.indexOf('--period');
 const period = periodFlag === -1 ? 0 : Number(args[periodFlag + 1]) || 0;
-const outFile = args.find((a, i) => !a.startsWith('--') && i !== periodFlag + 1) ||
+// The value after --period is not the output path. When there is no --period,
+// indexOf gives -1 and "periodFlag + 1" is 0, which used to exclude the FIRST
+// argument, so an explicit path was silently ignored and the file was written to
+// the default location instead.
+const outFile = args.find((a, i) => !a.startsWith('--') && !(periodFlag !== -1 && i === periodFlag + 1)) ||
   path.join(__dirname, '..', 'data', 'test-paystubs.pdf');
 
 const COMPANY = '00059095';
