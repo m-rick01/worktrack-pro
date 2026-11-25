@@ -123,6 +123,54 @@ is no external database server to separately manage.
 All of that is editable from the app itself once logged in as an admin, under
 **Settings** — no code changes or redeploys needed for those.
 
+### Rolling back a release
+
+Every production release is tagged in git (`prod-YYYY-MM-DD`), and before a
+release that changes the code or the database, a backup is taken **on the server,
+outside the app folder**, in `~/worktrack-backups/` (mode 700):
+
+- `code-before-<release>-<stamp>.tar.gz` — the code that was live;
+- `db-before-<release>-<stamp>.db` — a consistent copy of the database;
+- `fingerprint-before-<release>-<stamp>.json` — content hashes of every table, to
+  prove a deploy changed no existing row.
+
+**Roll back the code (the normal case).** Database changes in this project are
+additive (new columns and tables), so the previous version keeps working on the
+migrated database. Before each release that is verified for real, by starting the
+old code against a copy of the live data. From the server, with no laptop needed:
+
+```bash
+tar xzf ~/worktrack-backups/code-before-<release>-<stamp>.tar.gz -C ~/worktrack-pro
+touch ~/worktrack-pro/tmp/restart.txt
+```
+
+or from the project folder, using the tag:
+
+```bash
+git checkout <previous-tag>
+git ls-files -z | tar czf - --null -T - | ssh -p 5022 <user>@<host> \
+  'tar xzf - -C ~/worktrack-pro && touch ~/worktrack-pro/tmp/restart.txt'
+```
+
+Rolling the code back **keeps the data**: anything the newer version stored (pay
+stubs, for instance) stays in the database and on disk, only hidden until the
+newer code is deployed again.
+
+**Restore the database (only if data was damaged).** This loses everything
+entered since the backup, so prefer rolling back the code. Stop the app in the
+panel first, then:
+
+```bash
+cd ~/worktrack-pro/data
+rm -f worktrack.db-wal worktrack.db-shm
+cp ~/worktrack-backups/db-before-<release>-<stamp>.db worktrack.db
+```
+
+and start the app again.
+
+Backups are not deleted automatically; remove old ones once a release has proved
+itself. They hold employee data, so keep that folder private.
+
 ## Project layout
 
 ```
