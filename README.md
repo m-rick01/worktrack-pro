@@ -123,6 +123,54 @@ is no external database server to separately manage.
 All of that is editable from the app itself once logged in as an admin, under
 **Settings** — no code changes or redeploys needed for those.
 
+### Rolling back a release
+
+Every production release is tagged in git (`prod-YYYY-MM-DD`), and before a
+release that changes the code or the database, a backup is taken **on the server,
+outside the app folder**, in `~/worktrack-backups/` (mode 700):
+
+- `code-before-<release>-<stamp>.tar.gz` — the code that was live;
+- `db-before-<release>-<stamp>.db` — a consistent copy of the database;
+- `fingerprint-before-<release>-<stamp>.json` — content hashes of every table, to
+  prove a deploy changed no existing row.
+
+**Roll back the code (the normal case).** Database changes in this project are
+additive (new columns and tables), so the previous version keeps working on the
+migrated database. Before each release that is verified for real, by starting the
+old code against a copy of the live data. From the server, with no laptop needed:
+
+```bash
+tar xzf ~/worktrack-backups/code-before-<release>-<stamp>.tar.gz -C ~/worktrack-pro
+touch ~/worktrack-pro/tmp/restart.txt
+```
+
+or from the project folder, using the tag:
+
+```bash
+git checkout <previous-tag>
+git ls-files -z | tar czf - --null -T - | ssh -p 5022 <user>@<host> \
+  'tar xzf - -C ~/worktrack-pro && touch ~/worktrack-pro/tmp/restart.txt'
+```
+
+Rolling the code back **keeps the data**: anything the newer version stored (pay
+stubs, for instance) stays in the database and on disk, only hidden until the
+newer code is deployed again.
+
+**Restore the database (only if data was damaged).** This loses everything
+entered since the backup, so prefer rolling back the code. Stop the app in the
+panel first, then:
+
+```bash
+cd ~/worktrack-pro/data
+rm -f worktrack.db-wal worktrack.db-shm
+cp ~/worktrack-backups/db-before-<release>-<stamp>.db worktrack.db
+```
+
+and start the app again.
+
+Backups are not deleted automatically; remove old ones once a release has proved
+itself. They hold employee data, so keep that folder private.
+
 ## Project layout
 
 ```
@@ -135,13 +183,18 @@ src/
   utils.js      Pay-cycle math, overtime aggregation, CSV, body/multipart parsing
   pdf.js        Minimal hand-rolled PDF writer (no pdfkit dependency)
   report-pdf.js Lays out the Reports screen as a PDF, in English or French
+  pdf-split.js  Splits a Nethris payroll PDF into one PDF per employee and reads
+                the employee number, name and pay period off each page
   seed.js       One-time setup script (first admin account + default tasks)
   env.js        Tiny .env file loader
 scripts/
   reset-password.js  Command-line password reset for a locked-out account
+  make-test-paystubs.js  Writes a FAKE payroll PDF for trying the pay stub upload
 public/
   index.html, css/styles.css, js/app.js   The entire frontend (vanilla JS, no build step)
-uploads/        Timesheet entry attachments (created automatically)
+uploads/        Timesheet entry attachments, and pay stubs under uploads/paystubs/
+                (created automatically; the pay stubs are payroll data — back it up,
+                never commit it. uploads/ is already git-ignored)
 data/           SQLite database file (created automatically)
 ```
 
@@ -164,6 +217,22 @@ data/           SQLite database file (created automatically)
 - Admins don't log their own hours: they get Profile plus the admin screens, and
   sign in to the Approvals queue rather than a timesheet. My Time and History are
   employee-only, and an admin who follows one of those links lands on Approvals.
+- Pay stubs: the admin uploads the pay stub PDF exported from Nethris (all
+  employees in one file) under Admin → Pay stubs. It is split into one PDF per
+  employee, and each is matched to a profile by the Nethris employee number
+  (set per member under Team) or, failing that, by name — a name only matches
+  when exactly one person has it. Each stub waits for the admin to check it and
+  confirm it; only then does it appear under the employee's "Pay stubs", with an
+  optional email (Settings) in their own language. A stub can be reassigned or
+  rejected before confirming, and withdrawn afterwards. Confirming a stub for
+  someone with no employee number on file records it, so the next pay period
+  matches automatically. Uploading the same period twice is flagged. Employees
+  can only ever open their own confirmed stubs; anything else answers "not
+  found". To try it without real payroll data: `node scripts/make-test-paystubs.js`
+  writes a fake file to `data/test-paystubs.pdf`.
+  Needs a Nethris export it can read: classic cross-reference table, not
+  encrypted, Flate or uncompressed content. Anything else is refused with a
+  message rather than half-processed.
 - Admin: Approvals queue, Reports (regular vs. overtime hours — overtime is
   anything past the configurable weekly threshold, default 40h, counted per
   employee — weekly chart, per-employee summary, CSV and PDF export), Team

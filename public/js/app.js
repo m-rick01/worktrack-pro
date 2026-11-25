@@ -15,6 +15,46 @@
 
       login_email: 'Email', login_password: 'Password', login_signIn: 'Sign In',
       login_forgot: 'Forgot your password?',
+      notifyPayStub: 'Email employees when a pay stub is added to their profile',
+      nav_paystubs: 'Pay stubs', nav_myPaystubs: 'Pay stubs',
+      payrollNumber: 'Employee number (Nethris)',
+      payrollNumberHint: 'The employee number printed on the pay stub (MATRICULE). Used to put each stub in the right profile.',
+      payrollShort: 'Emp. no.',
+      paystubs_title: 'Pay stubs',
+      paystubs_sub: "Upload the Nethris payroll PDF, check each stub, then confirm it to put it in the employee's profile",
+      paystubs_upload: 'Upload the payroll file',
+      paystubs_uploadHint: "The PDF of every employee's pay stub, exported from Nethris. The app splits it into one stub per employee.",
+      paystubs_uploadBtn: 'Upload and split',
+      paystubs_uploading: 'Reading the PDF…',
+      paystubs_uploaded: '{count} stub(s) extracted. Check them below, then confirm each one.',
+      paystubs_pending: 'To confirm',
+      paystubs_pendingHint: 'Employees see nothing until you confirm their stub.',
+      paystubs_noPending: 'No stubs waiting to be confirmed.',
+      paystubs_published: "In employees' profiles",
+      paystubs_noPublished: 'No stubs published yet.',
+      paystubs_period: 'Period',
+      paystubs_payDate: 'Pay date',
+      paystubs_depositTo: 'Put in the profile of',
+      paystubs_chooseEmployee: '— Choose the employee —',
+      paystubs_preview: 'View PDF',
+      paystubs_confirm: 'Confirm and publish',
+      paystubs_reject: 'Reject',
+      paystubs_withdraw: 'Withdraw',
+      paystubs_matchedNumber: 'Matched by employee number',
+      paystubs_matchedName: 'Matched by name — please check',
+      paystubs_unmatched: 'No employee found — choose one',
+      paystubs_numberMismatch: "The number on the stub ({stub}) doesn't match the profile's ({profile})",
+      paystubs_duplicate: 'A stub for this person and pay date already exists ({status})',
+      paystubs_dupPending: 'awaiting confirmation', paystubs_dupPublished: 'already published',
+      paystubs_confirmReject: 'Reject this stub? The file will be deleted.',
+      paystubs_confirmWithdraw: "Withdraw this stub from {name}'s profile? The file will be deleted.",
+      paystubs_pages: '{count} page(s)',
+      paystubs_unknown: 'unknown',
+      myPaystubs_title: 'My pay stubs',
+      myPaystubs_sub: 'Your pay stubs, published by the administration',
+      myPaystubs_none: 'No pay stubs yet.',
+      employmentReadOnly: 'These details are managed by the administration.',
+      download: 'Download',
       forgot_title: 'Reset your password',
       forgot_sub: 'Enter your email address and we will send you a link to choose a new password.',
       forgot_send: 'Send reset link',
@@ -125,6 +165,46 @@
 
       login_email: 'Courriel', login_password: 'Mot de passe', login_signIn: 'Se connecter',
       login_forgot: 'Mot de passe oublié ?',
+      notifyPayStub: 'Envoyer un courriel aux employés lorsqu’un talon de paie est déposé dans leur profil',
+      nav_paystubs: 'Talons de paie', nav_myPaystubs: 'Talons de paie',
+      payrollNumber: 'Matricule Nethris',
+      payrollNumberHint: 'Le numéro d’employé imprimé sur le talon de paie (MATRICULE). Sert à déposer chaque talon dans le bon profil.',
+      payrollShort: 'Matricule',
+      paystubs_title: 'Talons de paie',
+      paystubs_sub: 'Déposez le PDF de paie de Nethris, vérifiez chaque talon, puis confirmez-le pour le déposer dans le profil de l’employé',
+      paystubs_upload: 'Déposer le fichier de paie',
+      paystubs_uploadHint: 'Le PDF des talons de paie de tous les employés, exporté de Nethris. L’application le découpe en un talon par employé.',
+      paystubs_uploadBtn: 'Téléverser et découper',
+      paystubs_uploading: 'Lecture du PDF…',
+      paystubs_uploaded: '{count} talon(s) extrait(s). Vérifiez-les ci-dessous puis confirmez chacun.',
+      paystubs_pending: 'À confirmer',
+      paystubs_pendingHint: 'Les employés ne voient rien tant que vous n’avez pas confirmé leur talon.',
+      paystubs_noPending: 'Aucun talon en attente de confirmation.',
+      paystubs_published: 'Déposés dans les profils',
+      paystubs_noPublished: 'Aucun talon déposé pour l’instant.',
+      paystubs_period: 'Période',
+      paystubs_payDate: 'Payable le',
+      paystubs_depositTo: 'Déposer dans le profil de',
+      paystubs_chooseEmployee: '— Choisir l’employé —',
+      paystubs_preview: 'Voir le PDF',
+      paystubs_confirm: 'Confirmer et déposer',
+      paystubs_reject: 'Rejeter',
+      paystubs_withdraw: 'Retirer',
+      paystubs_matchedNumber: 'Associé par matricule',
+      paystubs_matchedName: 'Associé par nom — vérifiez',
+      paystubs_unmatched: 'Aucun employé trouvé — choisissez-le',
+      paystubs_numberMismatch: 'Le matricule du talon ({stub}) ne correspond pas à celui du profil ({profile})',
+      paystubs_duplicate: 'Un talon pour cette personne et cette date de paie existe déjà ({status})',
+      paystubs_dupPending: 'en attente', paystubs_dupPublished: 'déjà déposé',
+      paystubs_confirmReject: 'Rejeter ce talon ? Le fichier sera supprimé.',
+      paystubs_confirmWithdraw: 'Retirer ce talon du profil de {name} ? Le fichier sera supprimé.',
+      paystubs_pages: '{count} page(s)',
+      paystubs_unknown: 'inconnu',
+      myPaystubs_title: 'Mes talons de paie',
+      myPaystubs_sub: 'Vos talons de paie déposés par l’administration',
+      myPaystubs_none: 'Aucun talon de paie pour l’instant.',
+      employmentReadOnly: 'Ces informations sont gérées par l’administration.',
+      download: 'Télécharger',
       forgot_title: 'Réinitialiser votre mot de passe',
       forgot_sub: 'Entrez votre courriel et nous vous enverrons un lien pour choisir un nouveau mot de passe.',
       forgot_send: 'Envoyer le lien',
@@ -280,6 +360,8 @@
     '#/team': viewTeam,
     '#/tasks': viewTasks,
     '#/settings': viewSettings,
+    '#/paystubs': viewPayStubs,
+    '#/my-paystubs': viewMyPayStubs,
   };
 
   // "#/reset?token=..." — the token rides in the fragment, which browsers never
@@ -328,7 +410,7 @@
   // rendering a screen full of failed requests. The actual enforcement is
   // requireAdmin on the server, which answers 403 whatever the client does.
   const EMPLOYEE_ONLY = ['', '#/my-time', '#/history'];
-  const ADMIN_ONLY = ['#/approvals', '#/reports', '#/team', '#/tasks', '#/settings'];
+  const ADMIN_ONLY = ['#/approvals', '#/reports', '#/team', '#/tasks', '#/settings', '#/paystubs'];
 
   function route() {
     const isAdmin = state.user && state.user.role === 'admin';
@@ -346,16 +428,21 @@
     const isAdmin = u.role === 'admin';
     // Admins don't log their own hours, so the timesheet views aren't theirs.
     // Profile stays — they still need it for contact details and their password.
+    // Pay stubs are listed for admins too: they may be on the payroll as well.
     const employeeLinks = isAdmin
-      ? [['#/profile', t('nav_profile')]]
+      // The admin also has the "Pay stubs" management link below, so their own
+      // is named "My pay stubs" to keep the two apart; employees only have one.
+      ? [['#/profile', t('nav_profile')], ['#/my-paystubs', t('myPaystubs_title')]]
       : [
           ['#/my-time', t('nav_myTime')],
           ['#/history', t('nav_history')],
+          ['#/my-paystubs', t('nav_myPaystubs')],
           ['#/profile', t('nav_profile')],
         ];
     const adminLinks = [
       ['#/approvals', t('nav_approvals')],
       ['#/reports', t('nav_reports')],
+      ['#/paystubs', t('nav_paystubs')],
       ['#/team', t('nav_team')],
       ['#/tasks', t('nav_tasks')],
       ['#/settings', t('nav_settings')],
@@ -1011,6 +1098,14 @@
         </div>
       </div>
       <div class="card">
+        <h3 style="margin-top:0">${t('employment')}</h3>
+        <div class="row">
+          <div class="col field"><label>${t('jobTitle')}</label><input type="text" value="${esc(u.jobTitle || '')}" disabled /></div>
+          <div class="col field"><label>${t('payrollNumber')}</label><input type="text" value="${esc(u.payrollNumber || '')}" disabled /></div>
+        </div>
+        <div class="hint">${t('employmentReadOnly')}</div>
+      </div>
+      <div class="card">
         <h3 style="margin-top:0">${t('preferences')}</h3>
         <div class="field"><label>${t('language')}</label>
           <select id="pLang">
@@ -1448,7 +1543,7 @@
             <span class="member-main">
               <strong>${esc(u.name)}</strong> <span class="badge badge-${u.role}">${u.role === 'admin' ? t('roleAdmin') : t('roleEmployee')}</span>
               ${!u.active ? `<span class="badge badge-rejected">${t('inactive')}</span>` : ''}
-              <span class="hint">${esc(u.email)}${u.jobTitle ? ' · ' + esc(u.jobTitle) : ''}</span>
+              <span class="hint">${esc(u.email)}${u.jobTitle ? ' · ' + esc(u.jobTitle) : ''}${u.payrollNumber ? ' · ' + t('payrollShort') + ' ' + esc(u.payrollNumber) : ''}</span>
             </span>
             <span class="member-chevron" aria-hidden="true">›</span>
           </button>
@@ -1478,6 +1573,8 @@
           </div>
           <div class="field"><label>${t('jobTitle')}</label><input type="text" id="ivJobTitle" /></div>
           <div class="field"><label>${t('department')}</label><input type="text" id="ivDept" /></div>
+          <div class="field"><label>${t('payrollNumber')}</label><input type="text" id="ivPayroll" inputmode="numeric" />
+            <div class="hint">${t('payrollNumberHint')}</div></div>
           <div class="error-text" id="ivError"></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" id="ivCancel">${t('cancel')}</button>
@@ -1497,6 +1594,7 @@
           role: document.getElementById('ivRole').value,
           jobTitle: document.getElementById('ivJobTitle').value,
           department: document.getElementById('ivDept').value,
+          payrollNumber: document.getElementById('ivPayroll').value,
         } });
         modalRoot.remove();
         viewTeam();
@@ -1532,6 +1630,8 @@
           <div class="form-section">${t('employment')}</div>
           <div class="field"><label>${t('jobTitle')}</label><input type="text" id="emJobTitle" value="${esc(u.jobTitle || '')}" /></div>
           <div class="field"><label>${t('department')}</label><input type="text" id="emDept" value="${esc(u.department || '')}" /></div>
+          <div class="field"><label>${t('payrollNumber')}</label><input type="text" id="emPayroll" inputmode="numeric" value="${esc(u.payrollNumber || '')}" />
+            <div class="hint">${t('payrollNumberHint')}</div></div>
           <div class="field"><label>${t('role')}</label>
             <select id="emRole"><option value="employee" ${u.role === 'employee' ? 'selected' : ''}>${t('roleEmployee')}</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${t('roleAdmin')}</option></select>
           </div>
@@ -1568,6 +1668,7 @@
           country: document.getElementById('emCountry').value,
           jobTitle: document.getElementById('emJobTitle').value,
           department: document.getElementById('emDept').value,
+          payrollNumber: document.getElementById('emPayroll').value,
           role: document.getElementById('emRole').value,
           active: document.getElementById('emActive').checked,
           language: document.getElementById('emLang').value,
@@ -1578,6 +1679,190 @@
         document.getElementById('emError').textContent = err.message;
       }
     };
+  }
+
+  // ---------- Pay stubs ----------
+  // "000000001" and "1" are the same employee number; compared the same way here
+  // as on the server, so the "matched by number" badge never disagrees with it.
+  function normPayroll(v) {
+    return String(v || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  }
+  function periodLabel(s) {
+    return s.periodStart && s.periodEnd ? `${s.periodStart} — ${s.periodEnd}` : '—';
+  }
+  function payStubUrl(id, download) {
+    return `${BASE}/api/paystubs/${id}/file${download ? '?download=1' : ''}`;
+  }
+
+  // Admin: upload the payroll PDF, check each stub it was split into, confirm it.
+  async function viewPayStubs(flash) {
+    const [{ users }, { stubs: pending }, { stubs: published }] = await Promise.all([
+      api('/api/users'),
+      api('/api/paystubs?status=pending'),
+      api('/api/paystubs?status=published'),
+    ]);
+    const people = users.filter((u) => u.active).sort((a, b) => a.name.localeCompare(b.name));
+
+    function matchNote(s) {
+      if (!s.userId) return `<span class="badge badge-rejected">${t('paystubs_unmatched')}</span>`;
+      if (s.payrollNumber && normPayroll(s.userPayrollNumber) === normPayroll(s.payrollNumber)) {
+        return `<span class="badge badge-approved">${t('paystubs_matchedNumber')}</span>`;
+      }
+      return `<span class="badge badge-pending">${t('paystubs_matchedName')}</span>`;
+    }
+
+    function warnings(s) {
+      const out = [];
+      if (s.userId && s.payrollNumber && normPayroll(s.userPayrollNumber) && normPayroll(s.userPayrollNumber) !== normPayroll(s.payrollNumber)) {
+        out.push(t('paystubs_numberMismatch', { stub: esc(s.payrollNumber), profile: esc(s.userPayrollNumber) }));
+      }
+      if (s.duplicateStatus) {
+        out.push(t('paystubs_duplicate', { status: t(s.duplicateStatus === 'published' ? 'paystubs_dupPublished' : 'paystubs_dupPending') }));
+      }
+      return out.map((w) => `<div class="paystub-warning">${w}</div>`).join('');
+    }
+
+    function pendingRow(s) {
+      return `
+        <div class="paystub-row" data-stub="${s.id}">
+          <div class="paystub-info">
+            <div class="paystub-who"><strong>${esc(s.detectedName || t('paystubs_unknown'))}</strong> ${matchNote(s)}</div>
+            <div class="hint">${t('payrollShort')} ${esc(s.payrollNumber || t('paystubs_unknown'))}
+              · ${t('paystubs_period')} ${esc(periodLabel(s))}
+              · ${t('paystubs_payDate')} ${esc(s.payDate || '—')}
+              · ${t('paystubs_pages', { count: s.pageCount })}</div>
+            ${warnings(s)}
+          </div>
+          <div class="paystub-actions">
+            <label class="paystub-select-label">${t('paystubs_depositTo')}
+              <select data-assign="${s.id}">
+                <option value="">${t('paystubs_chooseEmployee')}</option>
+                ${people.map((u) => `<option value="${u.id}" ${u.id === s.userId ? 'selected' : ''}>${esc(u.name)}${u.payrollNumber ? ` (${esc(u.payrollNumber)})` : ''}</option>`).join('')}
+              </select>
+            </label>
+            <div class="paystub-buttons">
+              <a class="btn btn-secondary btn-sm" href="${payStubUrl(s.id)}" target="_blank" rel="noopener">${t('paystubs_preview')}</a>
+              <button class="btn btn-danger btn-sm" data-reject="${s.id}">${t('paystubs_reject')}</button>
+              <button class="btn btn-success btn-sm" data-publish="${s.id}" ${s.userId ? '' : 'disabled'}>${t('paystubs_confirm')}</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    layout('#/paystubs', t('paystubs_title'), t('paystubs_sub'), `
+      <div class="card">
+        <h3 style="margin-top:0">${t('paystubs_upload')}</h3>
+        <div class="hint" style="margin:0 0 12px">${t('paystubs_uploadHint')}</div>
+        <form id="psUploadForm" class="toolbar" style="margin:0">
+          <input type="file" id="psFile" accept="application/pdf,.pdf" required />
+          <button class="btn btn-primary" type="submit" id="psUploadBtn">${t('paystubs_uploadBtn')}</button>
+        </form>
+        <div class="error-text" id="psUploadMsg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">${t('paystubs_pending')} ${pending.length ? `<span class="badge badge-pending">${pending.length}</span>` : ''}</h3>
+        <div class="hint" style="margin:0 0 8px">${t('paystubs_pendingHint')}</div>
+        ${pending.length ? pending.map(pendingRow).join('') : `<div class="empty-state">${t('paystubs_noPending')}</div>`}
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">${t('paystubs_published')}</h3>
+        ${published.length ? `<table><thead><tr>
+            <th>${t('employee')}</th><th>${t('paystubs_period')}</th><th>${t('paystubs_payDate')}</th><th>${t('actions')}</th>
+          </tr></thead><tbody>${published.map((s) => `<tr>
+            <td>${esc(s.userName || '—')}</td><td>${esc(periodLabel(s))}</td><td>${esc(s.payDate || '—')}</td>
+            <td style="white-space:nowrap">
+              <a class="btn btn-secondary btn-sm" href="${payStubUrl(s.id)}" target="_blank" rel="noopener">${t('paystubs_preview')}</a>
+              <button class="btn btn-danger btn-sm" data-withdraw="${s.id}" data-name="${esc(s.userName || '')}">${t('paystubs_withdraw')}</button>
+            </td>
+          </tr>`).join('')}</tbody></table>`
+          : `<div class="empty-state">${t('paystubs_noPublished')}</div>`}
+      </div>
+    `);
+
+    const msg = document.getElementById('psUploadMsg');
+    if (typeof flash === 'string' && flash) { msg.style.color = 'var(--success)'; msg.textContent = flash; }
+
+    document.getElementById('psUploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const file = document.getElementById('psFile').files[0];
+      if (!file) return;
+      const btn = document.getElementById('psUploadBtn');
+      btn.disabled = true;
+      msg.style.color = 'var(--text-muted)';
+      msg.textContent = t('paystubs_uploading');
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const { stubs } = await api('/api/paystubs/upload', { method: 'POST', body: form, isForm: true });
+        viewPayStubs(t('paystubs_uploaded', { count: stubs.length }));
+      } catch (err) {
+        btn.disabled = false;
+        msg.style.color = 'var(--danger)';
+        msg.textContent = err.message;
+      }
+    };
+
+    // Each action reports its own failure next to the stub it concerns.
+    async function act(row, fn) {
+      try {
+        await fn();
+        viewPayStubs();
+      } catch (err) {
+        let note = row.querySelector('.paystub-error');
+        if (!note) {
+          note = document.createElement('div');
+          note.className = 'error-text paystub-error';
+          row.querySelector('.paystub-info').appendChild(note);
+        }
+        note.textContent = err.message;
+      }
+    }
+    document.querySelectorAll('[data-assign]').forEach((sel) => {
+      sel.onchange = () => act(sel.closest('.paystub-row'), () =>
+        api(`/api/paystubs/${sel.getAttribute('data-assign')}`, { method: 'PATCH', body: { userId: sel.value ? Number(sel.value) : null } }));
+    });
+    document.querySelectorAll('[data-publish]').forEach((btn) => {
+      btn.onclick = () => {
+        btn.disabled = true;
+        act(btn.closest('.paystub-row'), () => api(`/api/paystubs/${btn.getAttribute('data-publish')}/publish`, { method: 'POST' }));
+      };
+    });
+    document.querySelectorAll('[data-reject]').forEach((btn) => {
+      btn.onclick = () => {
+        if (!confirm(t('paystubs_confirmReject'))) return;
+        act(btn.closest('.paystub-row'), () => api(`/api/paystubs/${btn.getAttribute('data-reject')}`, { method: 'DELETE' }));
+      };
+    });
+    document.querySelectorAll('[data-withdraw]').forEach((btn) => {
+      btn.onclick = async () => {
+        if (!confirm(t('paystubs_confirmWithdraw', { name: btn.getAttribute('data-name') }))) return;
+        try {
+          await api(`/api/paystubs/${btn.getAttribute('data-withdraw')}`, { method: 'DELETE' });
+          viewPayStubs();
+        } catch (err) {
+          alert(err.message);
+        }
+      };
+    });
+  }
+
+  // Employee: their own confirmed stubs.
+  async function viewMyPayStubs() {
+    const { stubs } = await api('/api/my/paystubs');
+    layout('#/my-paystubs', t('myPaystubs_title'), t('myPaystubs_sub'), `
+      <div class="card">
+        ${stubs.length ? `<table><thead><tr>
+            <th>${t('paystubs_payDate')}</th><th>${t('paystubs_period')}</th><th></th>
+          </tr></thead><tbody>${stubs.map((s) => `<tr>
+            <td><strong>${esc(s.payDate || '—')}</strong></td><td>${esc(periodLabel(s))}</td>
+            <td style="white-space:nowrap; text-align:right">
+              <a class="btn btn-secondary btn-sm" href="${payStubUrl(s.id)}" target="_blank" rel="noopener">${t('paystubs_preview')}</a>
+              <a class="btn btn-primary btn-sm" href="${payStubUrl(s.id, true)}">${t('download')}</a>
+            </td>
+          </tr>`).join('')}</tbody></table>`
+          : `<div class="empty-state">${t('myPaystubs_none')}</div>`}
+      </div>
+    `);
   }
 
   // ---------- Tasks (admin) ----------
@@ -1693,6 +1978,7 @@
         <div class="checkbox-row"><input type="checkbox" id="stNotifyNew" ${settings.notifyNewAccount ? 'checked' : ''}/><label for="stNotifyNew" style="margin:0">${t('notifyNewAccount')}</label></div>
         <div class="checkbox-row"><input type="checkbox" id="stNotifyApprove" ${settings.notifyApproval ? 'checked' : ''}/><label for="stNotifyApprove" style="margin:0">${t('notifyApproval')}</label></div>
         <div class="checkbox-row"><input type="checkbox" id="stNotifyReject" ${settings.notifyRejection ? 'checked' : ''}/><label for="stNotifyReject" style="margin:0">${t('notifyRejection')}</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="stNotifyPayStub" ${settings.notifyPayStub ? 'checked' : ''}/><label for="stNotifyPayStub" style="margin:0">${t('notifyPayStub')}</label></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">${t('company')}</h3>
@@ -1721,6 +2007,7 @@
           notifyNewAccount: document.getElementById('stNotifyNew').checked,
           notifyApproval: document.getElementById('stNotifyApprove').checked,
           notifyRejection: document.getElementById('stNotifyReject').checked,
+          notifyPayStub: document.getElementById('stNotifyPayStub').checked,
           companyName: document.getElementById('stCompanyName').value,
         } });
         state.settings = updated;
