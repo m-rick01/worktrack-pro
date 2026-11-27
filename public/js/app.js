@@ -2020,5 +2020,14 @@
     };
   }
 
+  // The worker is what makes the app installable. It is optional: if registering
+  // fails (an older browser, or plain http away from localhost) the app is exactly
+  // what it was.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(`${BASE}/sw.js`).catch(() => {});
+    });
+  }
+
   boot();
 })();
